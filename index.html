@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Visite 3D du projet Bon&Bon Sweet and Salt, 7 rue Vincent Brignole, Agde.">
+<meta property="og:title" content="Bon&Bon Sweet and Salt : visite 3D">
+<meta property="og:description" content="Découvrez le projet en 3D : façade, terrasse couverte et intérieur. Ouvrir et se déplacer librement.">
+<meta property="og:type" content="website">
+<title>Bon&amp;Bon : visite 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600&family=Barlow:wght@400;500&display=swap">
+<style>
+  /* Layout : scène 3D plein écran, panneau de contrôle flottant à gauche façon cartouche de plan */
+  :root{
+    --bg:#dfe7ee; --panel:#fbfbf8; --ink:#1f2a33; --muted:#5d6b76; --line:#cdd6dd;
+    --accent:#2f6f9a; --accent-ink:#ffffff; --chip:#eef3f6;
+    --f-display:"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif;
+    --f-body:"Barlow",system-ui,"Segoe UI",Arial,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+    --bg:#1b2229; --panel:#222b33; --ink:#e7edf2; --muted:#9fb0bd; --line:#35424d;
+    --accent:#7fb6dc; --accent-ink:#10202c; --chip:#2b3640; color-scheme:dark } }
+  :root[data-theme="dark"]{
+    --bg:#1b2229; --panel:#222b33; --ink:#e7edf2; --muted:#9fb0bd; --line:#35424d;
+    --accent:#7fb6dc; --accent-ink:#10202c; --chip:#2b3640; color-scheme:dark }
+  [hidden]{display:none!important}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--ink);font:14px/1.45 var(--f-body);overflow:hidden}
+  #c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+  .panel{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:max(16px, env(safe-area-inset-left,0px));
+    width:min(310px, calc(100vw - 32px));max-height:calc(100% - 90px);overflow:auto;
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+  .panel h1{font:600 19px/1.15 var(--f-display);letter-spacing:.01em;margin:0;text-wrap:balance}
+  .panel p{margin:0;color:var(--muted);font-size:13px}
+  .lbl{font:600 11px/1 var(--f-display);text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+  .grp{display:flex;flex-direction:column;gap:6px}
+  .row{display:flex;flex-wrap:wrap;gap:6px}
+  button{font:500 13px/1 var(--f-body);color:var(--ink);background:var(--chip);border:1px solid var(--line);border-radius:6px;padding:7px 9px;cursor:pointer}
+  button:hover{border-color:var(--accent)}
+  button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+  label{display:flex;gap:7px;align-items:center;cursor:pointer;font-size:13px}
+  .keys{font-size:12px;color:var(--muted)}
+  kbd{font:500 11px/1 var(--f-body);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:2px 5px;background:var(--chip);color:var(--ink)}
+  #toggle{position:fixed;left:max(16px, env(safe-area-inset-left,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+  #hud{position:fixed;right:max(16px, env(safe-area-inset-right,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));
+    display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+  .pad{display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,52px);gap:6px}
+  .pad button{font-size:18px;padding:0;background:var(--panel);user-select:none;-webkit-user-select:none;touch-action:none}
+  .cross{position:fixed;left:50%;top:50%;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;border:2px solid #ffffffcc;pointer-events:none}
+  @media (max-width:520px){ .panel{max-height:46%} }
+</style>
+
+
+</head>
+<body>
+<canvas id="c" aria-label="Maquette 3D du local Côte Soleil"></canvas>
+<div class="panel" id="panel">
+  <div class="grp">
+    <h1>Projet Bon&amp;Bon · 7 rue Vincent Brignole, Agde</h1>
+    <p>Proposition d'aménagement sur le bâti existant (cotes relevées) : façade noire à lames, enseigne néon, terrasse couverte meublée. Rendu indicatif.</p>
+  </div>
+  <div class="grp">
+    <span class="lbl">Visite à pied</span>
+    <div class="row">
+      <button class="primary" data-walk="rue">Depuis la rue</button>
+      <button data-walk="glacier">Glacier</button>
+      <button data-walk="couverte">Partie couverte</button>
+      <button data-walk="comptoir">Comptoir</button>
+      <button data-walk="cuisine">Cuisine</button>
+    </div>
+    <div class="keys">Avancer <kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> ou flèches · courir <kbd>Maj</kbd> · souris pour regarder · <kbd>Échap</kbd> libère la souris. Sur téléphone : glisser pour regarder, flèches à l'écran.</div>
+  </div>
+  <div class="grp">
+    <span class="lbl">Vues maquette</span>
+    <div class="row">
+      <button data-v="street">Rue</button>
+      <button data-v="area">Quartier</button>
+      <button data-v="corner">Angle pizzeria</button>
+      <button data-v="top">Dessus sans toit</button>
+    </div>
+  </div>
+  <div class="grp">
+    <span class="lbl">Afficher</span>
+    <label><input type="checkbox" id="tLid" checked> Toit du local</label>
+    <label><input type="checkbox" id="tUp" checked> Résidence (en retrait)</label>
+    <label><input type="checkbox" id="tRoof" checked> Façade, terrasse et mobilier</label>
+    <label><input type="checkbox" id="tEnv" checked> Rue, voisins, arbres</label>
+  </div>
+</div>
+<button id="toggle">Masquer le panneau</button>
+<div id="hud" hidden>
+  <div class="pad" aria-label="Déplacement">
+    <span></span><button data-pad="f" aria-label="Avancer">▲</button><span></span>
+    <button data-pad="tl" aria-label="Tourner à gauche">↺</button><button data-pad="b" aria-label="Reculer">▼</button><button data-pad="tr" aria-label="Tourner à droite">↻</button>
+    <button data-pad="l" aria-label="Pas à gauche">◀</button><span></span><button data-pad="r" aria-label="Pas à droite">▶</button>
+  </div>
+  <button class="primary" id="exitWalk">Quitter la visite</button>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+const H = 280;            // hauteur sous plafond estimée (cm)
+const FLOOR = 290;        // hauteur d'un étage d'habitation (cm), estimée
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xc9d6e2);
+scene.fog = new THREE.Fog(0xc9d6e2, 8000, 18000);
+const camera = new THREE.PerspectiveCamera(50, 1, 5, 20000);
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.maxPolarAngle = Math.PI*0.495;
+
+scene.add(new THREE.HemisphereLight(0xeef4ff, 0x9a9282, 1.1));
+const sun = new THREE.DirectionalLight(0xfff4e0, 2.2);
+sun.position.set(-900, 2200, 2600); sun.castShadow = true;
+sun.shadow.mapSize.set(4096,4096); sun.shadow.bias = -0.0004;
+Object.assign(sun.shadow.camera,{left:-3500,right:3500,top:3500,bottom:-3500,near:100,far:9000});
+sun.target.position.set(650,0,450); scene.add(sun, sun.target);
+
+/* ---------- Textures procédurales ---------- */
+const texCache = {};
+function canvasTex(key, w, h, draw){
+  if (texCache[key]) return texCache[key];
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  draw(cv.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(cv);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return texCache[key] = t;
+}
+const rnd = (a,b)=>a+Math.random()*(b-a);
+function noise(ctx,w,h,alpha=.06,n=4000){for(let i=0;i<n;i++){ctx.fillStyle=`rgba(0,0,0,${Math.random()*alpha})`;ctx.fillRect(Math.random()*w,Math.random()*h,2,2);}}
+// Terre cuite 11x22 en vannerie (cuisine, comptoir) : motif 44 cm
+const terracotta = canvasTex('tc',256,256,(c,w,h)=>{
+  c.fillStyle='#8a5a3c'; c.fillRect(0,0,w,h);
+  const s=w/4;
+  for(let i=0;i<4;i++)for(let j=0;j<4;j++){
+    const x=i*s,y=j*s,v=(i+j)%2;
+    for(let k=0;k<2;k++){
+      c.fillStyle=`hsl(${rnd(18,26)},${rnd(45,58)}%,${rnd(46,56)}%)`;
+      if(v) c.fillRect(x+2+k*s/2,y+2,s/2-4,s-4); else c.fillRect(x+2,y+2+k*s/2,s-4,s/2-4);
+    }
+  }
+  noise(c,w,h,.08,3000);
+});
+// Imitation parquet gris (glacier, partie couverte) : lames 20x120
+const woodTile = canvasTex('wt',512,256,(c,w,h)=>{
+  c.fillStyle='#8f8a82'; c.fillRect(0,0,w,h);
+  const rows=6,lh=h/rows;
+  for(let r=0;r<rows;r++){
+    const off=(r%3)*w/3;
+    for(let k=-1;k<3;k++){
+      const x=off+k*w/2;
+      c.fillStyle=`hsl(35,${rnd(5,10)}%,${rnd(58,68)}%)`; c.fillRect(x+1,r*lh+1,w/2-2,lh-2);
+      c.strokeStyle='rgba(80,70,60,.18)';
+      for(let g=0;g<6;g++){c.beginPath();const yy=r*lh+rnd(4,lh-4);c.moveTo(x+4,yy);c.bezierCurveTo(x+w/6,yy+rnd(-3,3),x+w/3,yy+rnd(-3,3),x+w/2-4,yy);c.stroke();}
+    }
+  }
+});
+// Faïence blanche 15x15
+const whiteTile = canvasTex('wtile',256,256,(c,w,h)=>{
+  c.fillStyle='#a3a39e'; c.fillRect(0,0,w,h);
+  const n=4,s=w/n;
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++){c.fillStyle=`hsl(40,10%,${rnd(92,97)}%)`;c.fillRect(i*s+2,j*s+2,s-4,s-4);}
+});
+// Crépi blanc
+const plaster = canvasTex('pl',256,256,(c,w,h)=>{
+  c.fillStyle='#ecebe5'; c.fillRect(0,0,w,h);
+  for(let i=0;i<9000;i++){const g=rnd(200,245)|0;c.fillStyle=`rgba(${g},${g},${g-6},.5)`;c.fillRect(Math.random()*w,Math.random()*h,rnd(1,3),rnd(1,3));}
+});
+// Façade immeuble (crème)
+const facade = canvasTex('fa',256,256,(c,w,h)=>{c.fillStyle='#e9e3d4';c.fillRect(0,0,w,h);noise(c,w,h,.04,5000);});
+// Lames composites terrasse
+const deck = canvasTex('dk',256,256,(c,w,h)=>{
+  c.fillStyle='#2e2c2a'; c.fillRect(0,0,w,h);
+  const n=8,s=h/n;
+  for(let i=0;i<n;i++){c.fillStyle=`hsl(30,4%,${rnd(30,37)}%)`;c.fillRect(0,i*s+1,w,s-3);
+    c.fillStyle='rgba(0,0,0,.25)';for(let g=0;g<4;g++)c.fillRect(0,i*s+4+g*(s/5),w,1);}
+});
+// Bitume, trottoir, bambou, bois palissade
+const asphalt = canvasTex('as',256,256,(c,w,h)=>{c.fillStyle='#5d5e5f';c.fillRect(0,0,w,h);for(let i=0;i<14000;i++){const g=rnd(60,130)|0;c.fillStyle=`rgb(${g},${g},${g})`;c.fillRect(Math.random()*w,Math.random()*h,1.5,1.5);}});
+const concrete = canvasTex('co',256,256,(c,w,h)=>{c.fillStyle='#c7c3ba';c.fillRect(0,0,w,h);noise(c,w,h,.07,6000);c.strokeStyle='rgba(0,0,0,.18)';c.lineWidth=2;c.strokeRect(1,1,w-2,h-2);});
+const bamboo = canvasTex('bb',256,256,(c,w,h)=>{const n=16,s=w/n;for(let i=0;i<n;i++){c.fillStyle=`hsl(40,${rnd(35,50)}%,${rnd(55,65)}%)`;c.fillRect(i*s,0,s-1,h);c.fillStyle='rgba(90,60,20,.45)';const k=rnd(30,80);for(let y=k;y<h;y+=80)c.fillRect(i*s,y,s-1,3);}});
+const fenceWood = canvasTex('fw',256,256,(c,w,h)=>{c.fillStyle='#8a5e3a';c.fillRect(0,0,w,h);for(let i=0;i<16;i++){c.fillStyle=`hsl(26,${rnd(35,45)}%,${rnd(32,42)}%)`;c.fillRect(0,i*16+1,w,14);}});
+const hedge = canvasTex('hg',128,128,(c,w,h)=>{c.fillStyle='#2f5a24';c.fillRect(0,0,w,h);for(let i=0;i<1500;i++){c.fillStyle=`hsl(${rnd(90,120)},${rnd(35,55)}%,${rnd(20,42)}%)`;c.beginPath();c.arc(Math.random()*w,Math.random()*h,rnd(1.5,3.5),0,7);c.fill();}});
+
+function M(opts){return new THREE.MeshStandardMaterial(Object.assign({roughness:.85},opts));}
+function texMat(tex, sx, sy, extra={}){const t=tex.clone(); t.needsUpdate=true; t.repeat.set(sx,sy); return M(Object.assign({map:t},extra));}
+
+/* ---------- Helpers géométrie (coordonnées du plan, cm) ---------- */
+const groups = {base:new THREE.Group(), lid:new THREE.Group(), up:new THREE.Group(), roof:new THREE.Group(), net:new THREE.Group(), prop:new THREE.Group(), env:new THREE.Group()};
+Object.values(groups).forEach(g=>scene.add(g));
+// obstacles pour la visite à pied (rectangles au sol, en cm)
+const colliders = [];
+function box(x,z,w,d,y0,y1,mat,grp=groups.base,cast=true){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,y1-y0,d),mat);
+  m.position.set(x+w/2,y0+(y1-y0)/2,z+d/2); m.castShadow=cast; m.receiveShadow=true; grp.add(m);
+  if(y0<120 && y1>40 && y1-y0>30) colliders.push({x0:x,x1:x+w,z0:z,z1:z+d,grp});
+  return m;
+}
+function floor(x,z,w,d,tex,tile,y=0,grp=groups.base,extra){
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(w,d),texMat(tex,w/tile,d/tile,extra));
+  m.rotation.x=-Math.PI/2; m.position.set(x+w/2,y,z+d/2); m.receiveShadow=true; grp.add(m); return m;
+}
+// panneau vertical texturé (faïence) : face orientée selon axe
+function panel(x,z,w,h,y0,tex,tile,rotY,grp=groups.base){
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),texMat(tex,w/tile,h/tile,{roughness:.35}));
+  m.position.set(x,y0+h/2,z); m.rotation.y=rotY; m.receiveShadow=true; grp.add(m); return m;
+}
+function textTex(lines, w, h, bg, fg, font){
+  const cv=document.createElement('canvas'); cv.width=w; cv.height=h; const c=cv.getContext('2d');
+  c.fillStyle=bg; c.fillRect(0,0,w,h); c.fillStyle=fg; c.textAlign='center'; c.textBaseline='middle';
+  lines.forEach(([t,f,y,col])=>{c.font=f||font; if(col)c.fillStyle=col; c.fillText(t,w/2,y);});
+  const t=new THREE.CanvasTexture(cv); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=8; return t;
+}
+
+/* ---------- Local : un rectangle vide, seules les ouvertures extérieures sont gardées ---------- */
+// Intérieur x 0-1350, z 0-500 (profondeur 500 = mur du glacier). Ouvertures sur la partie couverte :
+// glacier 390 (rideau), vitrage du comptoir ouvert (730-900), rideau cuisine 390 (960-1350) ; porte arrière côté pizzeria.
+const SHIFT=40;   // décalage déjà appliqué aux abords côté ouest
+floor(0,0,1350,500,concrete,300,0.5,groups.base,{color:0x9a9896,roughness:.28,metalness:.05});
+floor(-20,500,1390,300,concrete,300,0.5,groups.base,{color:0x8f8d8b,roughness:.25,metalness:.05});          // partie couverte (portée à 566 plus loin)
+box(1370,320,287,480,-2,6,M({color:0x2b2a28}));      // terrasse bois composite
+floor(1370,320,287,480,deck,100,6.2);
+box(-20,-20,1390,840,-12,0,M({color:0x9b968c}),groups.base,false);
+
+/* ---------- Enveloppe ---------- */
+const wallM = texMat(plaster,2,2,{roughness:.95});
+box(-20,-20,1390,20,0,H,wallM);                     // mur du fond
+box(-20,0,20,520,0,H,wallM);                        // mur est
+box(1350,0,20,400,0,H,wallM); box(1350,480,20,40,0,H,wallM);   // mur ouest (porte arrière 400-480)
+box(1350,400,20,80,210,H,wallM);
+// façade sur la partie couverte
+box(-20,500,410,20,250,H,wallM);                    // linteau ouverture glacier (390)
+box(390,500,340,20,0,H,wallM);                      // mur plein
+box(730,500,170,20,240,H,wallM);                    // linteau vitrage (laissé ouvert)
+box(900,500,60,20,0,H,wallM);                       // trumeau
+box(960,500,390,20,240,H,wallM);                    // linteau rideau cuisine (390)
+const ceil = M({color:0xf2f0ea, side:THREE.DoubleSide});
+box(-20,-20,1390,540,H,H+20,ceil,groups.lid);
+box(-24,-24,1398,548,H+20,H+26,M({color:0x9c9a94}),groups.lid);
+
+/* ---------- Menuiseries extérieures ---------- */
+const alu = M({color:0xb9bec2, metalness:.7, roughness:.35});
+[730,900].forEach(x=>box(x-3,504,6,12,0,240,alu));
+const shutterBox = M({color:0x8d9093, metalness:.5, roughness:.5});
+box(0,520,390,22,250,272,shutterBox);
+box(960,520,390,22,240,262,shutterBox);
+const blueDoor = M({color:0x8bb4cf});
+const door = box(0,0,4,80,0,205,blueDoor); colliders.pop(); door.rotation.y=.9; door.position.set(1370+40*Math.sin(.9),102.5,400+40*Math.cos(.9));
+const tube = M({color:0xffffff, emissive:0xffffff, emissiveIntensity:.4});
+[[200,250],[680,250],[1160,250]].forEach(([x,z])=>box(x-60,z-6,120,12,H-10,H,tube,groups.base,false));
+groups.net.visible=false; groups.prop.visible=false;
+
+/* Auvent d'origine remplacé par le projet Bon&Bon (voir plus bas). */
+const R=groups.roof;
+
+/* ---------- Immeuble au-dessus (R+2, approximatif d'après photos) ---------- */
+const U=groups.up;
+const facM = texMat(facade,3,3);
+// Résidence : ~33 m de long (Côte Soleil + Les Dunes), ~12 m de profondeur (vue satellite)
+const bx0=-2100, bx1=1150, bz0=-1300, bz1=-200;   // résidence ~2 m en retrait derrière le local
+for(let f=0;f<3;f++){
+  const y0=-12+f*FLOOR;
+  const fz = f===2 ? bz1-120 : bz1;   // dernier étage en retrait (Street View)
+  box(bx0,bz0,bx1-bx0,fz-bz0,y0,y0+FLOOR,facM,U);
+  // bandeau gris entre niveaux
+  box(bx0-4,fz-2,bx1-bx0+8,8,y0,y0+18,M({color:0x6e7378}),U);
+  for(let i=0;i<15;i++){
+    const wx=bx0+90+i*210;
+    if(f===2){ // grandes baies sans volets
+      box(wx-20,fz-2,170,6,y0+40,y0+240,M({color:0x2b3540,roughness:.2,metalness:.3}),U,false);
+      continue;
+    }
+    box(wx,fz-2,110,6,y0+80,y0+230,M({color:0x2b3540,roughness:.2,metalness:.3}),U,false);
+    box(wx-52,fz,50,4,y0+80,y0+230,M({color:0xf7f7f5}),U,false);
+    box(wx+112,fz,50,4,y0+80,y0+230,M({color:0xf7f7f5}),U,false);
+    if(f===1 && i%3===1){ // balcon
+      box(wx-40,fz,190,80,y0+70,y0+80,M({color:0xd9d6cf}),U);
+      box(wx-40,fz+76,190,4,y0+80,y0+180,M({color:0xb8b8b4,transparent:true,opacity:.85}),U);
+    }
+  }
+}
+// garde-corps de la terrasse du dernier étage
+box(bx0,bz1-6,bx1-bx0,6,-12+2*FLOOR,-12+2*FLOOR+100,M({color:0xd9d6cf}),U);
+// toit
+box(bx0-10,bz0-10,bx1-bx0+20,bz1-bz0+20,-12+3*FLOOR,8+3*FLOOR,M({color:0x8a8a86}),U);
+// mur pignon côté terrasse : petit appentis "PAIN Poulet-Rôti" au fond
+box(1330,-60,300,220,0,250,M({color:0xe8e8e4}),groups.env);
+box(1320,-70,320,240,250,262,M({color:0x5a5f66}),groups.env);
+const painTex=textTex([['PAIN','800 90px Arial',70,'#5a3a1a'],['Poulet - Rôti','italic 700 50px Georgia',150,'#7a2a10']],420,200,'#f2cf2e','#000');
+const painM=new THREE.Mesh(new THREE.PlaneGeometry(130,62),M({map:painTex}));painM.position.set(1450,215,160.5);groups.env.add(painM);
+
+/* ---------- Environnement ---------- */
+const V=groups.env;
+// trottoir + marches devant
+box(-600,800,2600,20,-14,0,texMat(concrete,26,1),V);
+box(-600,820,2600,40,-28,-14,texMat(concrete,26,1),V);
+box(-600,860,2600,40,-42,-28,texMat(concrete,26,1),V);
+// rue
+const road=floor(-2250,900,4850,700,asphalt,200,-42,V);
+// marquage
+for(let x=-2100;x<2600;x+=600) box(x,1245,300,12,-41.5,-41,M({color:0xf2f2f2}),V,false);
+// trottoir d'en face
+box(-2250,1600,4850,300,-42,-26,texMat(concrete,48,3),V);
+// rue latérale (côté pizzeria)
+floor(1630,-800,600,1700,asphalt,200,-42,V);
+box(1617,320,13,480,-42,6,M({color:0xa9a59c}),V);
+// Crêperie en face
+// rez-de-chaussée gris anthracite + étages ocre (Street View)
+box(-500,1900,1300,700,-26,300,M({color:0x6b7177}),V);
+box(-500,1900,1300,700,300,880,M({color:0xd9b46e}),V);
+for(let f=0;f<2;f++)for(let i=0;i<5;i++) box(-440+i*250,1897,110,4,380+f*270,520+f*270,M({color:0x2b3540,roughness:.2}),V,false);
+box(-500,1890,1300,14,-26,90,M({color:0x7a5a3a}),V);
+const crepTex=textTex([['Crêperie','500 90px Georgia,serif',64,'#333']],700,128,'#e9e6df','#333');
+const crep=new THREE.Mesh(new THREE.PlaneGeometry(320,58),M({map:crepTex}));crep.position.set(150,250,1889);crep.rotation.y=Math.PI;V.add(crep);
+for(let i=0;i<5;i++) box(-430+i*250,1889,160,4,20,190,M({color:0x2b3540,roughness:.2}),V,false);
+// terrasse crêperie : tables et chaises noires
+for(let i=0;i<4;i++){
+  const tx=-350+i*260, tz=1720;
+  const t=new THREE.Mesh(new THREE.CylinderGeometry(35,35,4,20),M({color:0x2a2a2a}));t.position.set(tx,48,tz);t.castShadow=true;V.add(t);
+  const l=new THREE.Mesh(new THREE.CylinderGeometry(3,3,72,8),M({color:0x2a2a2a}));l.position.set(tx,10,tz);V.add(l);
+  [[-55,0],[55,0]].forEach(([dx,dz])=>{box(tx+dx-22,tz+dz-22,44,44,-26,20,M({color:0x1f1f1f}),V);box(tx+dx-22,tz+dz+(dx<0?-22:18),44,4,20,60,M({color:0x1f1f1f}),V);});
+}
+// Rez-de-chaussée voisin : entrée résidence + Restaurant Les Dunes (côté est)
+// Suite de boutiques côté est, même principe que le local : vitrines en retrait + auvent bleu (Street View)
+box(-2100,-200,2080,700,-12,H+20,texMat(facade,6,3),V);
+box(-2104,-204,2088,1010,H+20,H+26,M({color:0x9c9a94}),V);
+floor(-2100,500,2080,300,woodTile,120,0.5,V);
+const shopBays=[-2100,-1450,-800];
+shopBays.forEach((sx,k)=>{
+  box(sx+40,497,560,4,0,240,M({color:0x2b3540,roughness:.15,metalness:.3}),V,false);   // vitrine
+  box(sx+40,494,560,8,240,260,M({color:0x8d9093,metalness:.5}),V);                     // coffre rideau
+  box(sx+640,500,10,300,0,H,wallM,V);                                                   // mur mitoyen
+  box(sx+2,784,16,16,0,H+40,M({color:0x4f86a8,roughness:.5}),V);                        // poteau bleu
+});
+box(-24,784,16,16,0,H+40,M({color:0x4f86a8,roughness:.5}),V);
+// bandeau bleu continu ; seul le restaurant Les Dunes est nommé (OpenStreetMap)
+box(-2100,802,2080,8,H+22,H+82,M({color:0x4f86a8,roughness:.5}),V);
+const dunesTex=textTex([['Restaurant Les Dunes','600 70px Georgia,serif',64,'#fff']],900,128,'#4f86a8','#fff');
+const dunes=new THREE.Mesh(new THREE.PlaneGeometry(420,58),M({map:dunesTex}));dunes.position.set(-1780,H+52,806.5);V.add(dunes);
+box(-150,498,110,4,0,220,M({color:0xf5f5f3}),V,false);   // porte vitrée blanche de la résidence
+// sol général (jardins, arrière)
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(12000,12000),M({color:0x8c9a6e}));ground.rotation.x=-Math.PI/2;ground.position.set(0,-44,0);ground.receiveShadow=true;V.add(ground);
+// piscine de la résidence (à l'arrière, côté sud)
+box(-1500,-1900,700,420,-44,-30,M({color:0xe8e4da}),V);
+box(-1450,-1850,600,320,-31,-29,M({color:0x3fb6d8,roughness:.1,metalness:.1}),V,false);
+// Quai Théophile Cornu + l'Hérault (à l'est)
+floor(-3000,-3000,750,5000,asphalt,200,-42,V);
+box(-3300,-3000,300,5000,-60,-30,texMat(concrete,3,50),V);
+const water=new THREE.Mesh(new THREE.PlaneGeometry(5000,9000),M({color:0x3d6f86,roughness:.15,metalness:.2}));water.rotation.x=-Math.PI/2;water.position.set(-5800,-90,0);V.add(water);
+// bâtiments d'en face (côté nord de la rue)
+box(900,1900,1300,700,-26,860,M({color:0xd7a64a}),V);
+box(-2000,1900,1400,700,-26,620,M({color:0xe6dccb}),V);
+const ancreTex=textTex([["L'Ancre Marine",'600 70px Georgia,serif',64,'#1d3a5a']],800,128,'#f1ece2','#000');
+const ancre=new THREE.Mesh(new THREE.PlaneGeometry(380,60),M({map:ancreTex}));ancre.position.set(-1300,260,1899);ancre.rotation.y=Math.PI;V.add(ancre);
+// noms des rues au sol
+function streetName(t,x,z,rot,w=900){const tx=textTex([[t,'600 64px Arial',64,'#ffffff']],1100,128,'rgba(0,0,0,0)','#fff');
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(w,w*128/1100),new THREE.MeshBasicMaterial({map:tx,transparent:true,depthWrite:false}));
+  m.rotation.set(-Math.PI/2,0,rot);m.position.set(x,-40,z);V.add(m);}
+streetName('Rue Vincent Brignole',300,1100,Math.PI);
+streetName('Impasse Lamothe Tenet',1950,-200,Math.PI/2,800);
+streetName('Quai Théophile Cornu',-2620,300,-Math.PI/2,900);
+streetName("L'Hérault",-5000,300,-Math.PI/2,1200);
+// flèche Nord (le local donne au nord, sur la rue)
+const nTex=textTex([['N ↑','800 90px Arial',64,'#c0262d']],256,128,'rgba(255,255,255,.85)','#c0262d');
+const nM=new THREE.Mesh(new THREE.PlaneGeometry(160,80),new THREE.MeshBasicMaterial({map:nTex,transparent:true,depthWrite:false}));nM.rotation.set(-Math.PI/2,0,Math.PI);nM.position.set(1450,-39,1450);V.add(nM);
+// palissades : bambou + haie (au fond de la terrasse), bois (côté nord)
+box(1330,300,300,6,0,200,texMat(bamboo,3,1),V);
+box(1335,293,180,8,140,200,texMat(hedge,3,1),V);
+box(1622,-60,8,380,0,190,texMat(fenceWood,4,1),V);
+const specTex=textTex([['Nos Spécialités','700 46px Arial',50,'#fff']],420,300,'#1d87c8','#fff');
+const spec=new THREE.Mesh(new THREE.PlaneGeometry(120,85),M({map:specTex}));spec.position.set(1617,140,100);spec.rotation.y=-Math.PI/2;V.add(spec);
+// haie côté passage
+box(1326,220,8,90,0,220,texMat(hedge,1,2),V);
+// jardinières grises + plantes
+const potM=M({color:0x5b5f63,roughness:.6});
+[[1360,830],[1600,830],[-250,815]].forEach(([x,z])=>{box(x,z,70,70,-14,60,potM,V);const p=new THREE.Mesh(new THREE.SphereGeometry(45,12,10),texMat(hedge,2,2));p.position.set(x+35,95,z+35);p.scale.y=.8;p.castShadow=true;V.add(p);});
+// laurier rose (côté glacier)
+const ol=new THREE.Mesh(new THREE.SphereGeometry(80,14,10),texMat(hedge,2,2));ol.position.set(-120,140,700);ol.scale.set(.8,1.6,.8);ol.castShadow=true;V.add(ol);
+box(-170,650,110,110,-14,50,M({color:0xb9b5ad}),V);
+// pins parasols
+const trunkM=M({color:0x6b4a32}), pineM=texMat(hedge,4,2,{color:0x8fb07a});
+function pine(x,z,h,s){const t=new THREE.Mesh(new THREE.CylinderGeometry(14,22,h,10),trunkM);t.position.set(x,h/2,z);t.rotation.z=rnd(-.08,.08);t.castShadow=true;V.add(t);
+  for(let k=0;k<3;k++){const c=new THREE.Mesh(new THREE.SphereGeometry(s*rnd(.8,1.1),14,10),pineM);c.position.set(x+rnd(-s*.6,s*.6),h+rnd(-20,30),z+rnd(-s*.5,s*.5));c.scale.y=.45;c.castShadow=true;V.add(c);}}
+pine(2300,-300,1100,320); pine(2600,300,950,280); pine(2000,-1100,1200,340); pine(1400,-1500,1000,320); pine(400,-1700,1100,300); pine(2800,-1600,1000,300);
+// lampadaire
+const pole=new THREE.Mesh(new THREE.CylinderGeometry(5,7,700,10),M({color:0x9aa0a6,metalness:.5}));pole.position.set(1750,350,880);V.add(pole);
+// voiture garée (rue latérale)
+const car=new THREE.Group();
+const body=new THREE.Mesh(new THREE.BoxGeometry(180,70,440),M({color:0x2549a0,metalness:.4,roughness:.35}));body.position.y=55;car.add(body);
+const cab=new THREE.Mesh(new THREE.BoxGeometry(165,55,230),M({color:0x1c2230,roughness:.15,metalness:.3}));cab.position.set(0,115,-10);car.add(cab);
+[[-85,-140],[85,-140],[-85,140],[85,140]].forEach(([x,z])=>{const w=new THREE.Mesh(new THREE.CylinderGeometry(32,32,22,16),M({color:0x111111}));w.rotation.z=Math.PI/2;w.position.set(x,32,z);car.add(w);});
+car.position.set(1950,-42,700); car.traverse(o=>{o.castShadow=true;}); V.add(car);
+// panneaux routiers
+function roadSign(x,z,color,shape){const p=new THREE.Mesh(new THREE.CylinderGeometry(3,3,250,8),M({color:0x9aa0a6}));p.position.set(x,125,z);V.add(p);
+  const g=shape==='circle'?new THREE.CylinderGeometry(30,30,3,24):new THREE.BoxGeometry(50,50,3);const s=new THREE.Mesh(g,M({color}));if(shape==='circle')s.rotation.x=Math.PI/2;s.position.set(x,260,z);V.add(s);}
+roadSign(1710,860,0x1f5fbf,'circle'); roadSign(1790,860,0x1f5fbf,'square');
+
+// décale aussi les abords côté ouest (terrasse, palissades, kiosque, impasse)
+groups.env.children.forEach(o=>{ if(o.position.x>1300) o.position.x+=SHIFT; });
+colliders.forEach(c=>{ if(c.grp===groups.env && c.x0>1300){c.x0+=SHIFT;c.x1+=SHIFT;} });
+/* ---------- Profondeur de la partie couverte : 566 (photo) ---------- */
+const DZ=566-280;
+Object.values(groups).forEach(g=>g.children.forEach(o=>{
+  if(o.userData.fixed) return;
+  const b=new THREE.Box3().setFromObject(o); if(!isFinite(b.min.z)) return;
+  if(b.min.z>=700){ o.position.z+=DZ; return; }
+  if(b.max.z>700 && b.max.z<=910 && b.min.z>=-1000){          // éléments qui vont jusqu'au bord de l'auvent : on les allonge
+    const d=b.max.z-b.min.z, f=(d+DZ)/d;
+    if(o.geometry && o.geometry.type==='PlaneGeometry'){ o.scale.y*=f; if(o.material.map) o.material.map.repeat.y*=f; }
+    else o.scale.z*=f;
+    o.position.z+=DZ/2;
+  }
+}));
+colliders.forEach(c=>{ if(c.fixed) return; if(c.z0>=700){c.z0+=DZ;c.z1+=DZ;} else if(c.z1>700 && c.z1<=910 && c.z0>=-1000){c.z1+=DZ;} });
+
+
+/* ================= Projet Bon&Bon : aménagement (coordonnées finales, partie couverte jusqu'à z 1086) ================= */
+const ZF = 1086;
+const black = M({color:0x121315, roughness:.55});
+const slatM = M({color:0x1b1c1f, roughness:.45});
+const P = groups.roof;                       // tout ce qui est extérieur suit la case « Auvent et enseignes »
+function glow(x,z,w,d,y0,y1,color,grp=P){const m=new THREE.Mesh(new THREE.BoxGeometry(w,y1-y0,d),new THREE.MeshBasicMaterial({color})); m.position.set(x+w/2,y0+(y1-y0)/2,z+d/2); grp.add(m); return m;}
+function slats(x0,z0,x1,z1,y0,y1,step=14,grp=P){
+  const L=Math.hypot(x1-x0,z1-z0), n=Math.floor(L/step);
+  for(let i=0;i<=n;i++){const t=i/n, x=x0+(x1-x0)*t, z=z0+(z1-z0)*t; box(x-3,z-3,6,6,y0,y1,slatM,grp,false);}
+}
+
+// --- Structure noire : toiture, bandeau, poteaux
+box(-30,520,1440,566,H+20,H+32,black,P);
+box(-40,ZF-4,1460,14,H+20,H+125,black,P);                        // bandeau de façade
+[-30,330,690,1030,1380].forEach(x=>box(x,ZF-24,24,24,0,H+20,black,P));
+[-30,1380].forEach(x=>box(x,520,24,24,0,H+20,black,P));
+slats(-30,ZF+11,170,ZF+11,H+28,H+122,10);  slats(1210,ZF+11,1410,ZF+11,H+28,H+122,10);   // lames aux extrémités du bandeau
+// lignes néon sous le bandeau : rose à gauche, cyan à droite
+glow(-30,ZF+10,620,3,H+30,H+34,0xff2f92); glow(820,ZF+10,590,3,H+30,H+34,0x22d3ee);
+// enseigne lumineuse
+{
+  const cv=document.createElement('canvas'); cv.width=1024; cv.height=360; const c=cv.getContext('2d');
+  c.fillStyle='#0b0b0d'; c.fillRect(0,0,1024,360);
+  c.lineJoin='round'; c.textAlign='center';
+  c.font='900 170px Arial Black, Arial, sans-serif';
+  c.lineWidth=34; c.strokeStyle='#ff2f92'; c.strokeText('BON',290,195); c.strokeStyle='#22d3ee'; c.strokeText('BON',770,195);
+  c.fillStyle='#ffffff'; c.fillText('BON',290,195); c.fillText('BON',770,195);
+  c.font='900 130px Arial Black, Arial'; c.fillStyle='#ff2f92'; c.fillText('&',530,190);
+  c.font='800 64px Arial'; c.lineWidth=6; c.strokeStyle='#ffffff'; c.strokeText('SWEET AND SALT',512,300);
+  c.fillStyle='#ff2f92'; c.fillText('SWEET AND',440,300); c.fillStyle='#ffe14d'; c.fillText('SALT',735,300);
+  const t=new THREE.CanvasTexture(cv); t.colorSpace=THREE.SRGBColorSpace;
+  const sign=new THREE.Mesh(new THREE.PlaneGeometry(330,116),new THREE.MeshBasicMaterial({map:t}));
+  sign.position.set(705,H+72,ZF+11.5); P.add(sign);
+}
+// écrans à lames verticales sur les côtés, avec bandes LED
+slats(-28,535,-28,ZF-30,0,H+20);   slats(1392,535,1392,ZF-30,0,H+20);
+[620,820,1000].forEach(z=>{glow(-22,z,3,3,0,H+18,0xff2f92); glow(1386,z,3,3,0,H+18,0x22d3ee);});
+
+// --- Habillage noir de la façade intérieure (côté partie couverte)
+box(390,520,340,5,0,H,black,P,false); slats(400,527,720,527,0,H,12);
+box(900,520,60,5,0,H,black,P,false);
+box(-20,520,410,5,250,H,black,P,false); box(960,520,390,5,240,H,black,P,false); box(730,520,170,5,240,H,black,P,false);
+glow(395,526,3,3,0,H,0xff2f92); glow(722,526,3,3,0,H,0xff2f92); glow(905,526,3,3,0,H,0x22d3ee); glow(952,526,3,3,0,H,0x22d3ee);
+// néon cornet de glace
+{
+  const cv=document.createElement('canvas'); cv.width=256; cv.height=420; const c=cv.getContext('2d');
+  c.strokeStyle='#ff3d9a'; c.lineWidth=14; c.lineCap='round'; c.shadowColor='#ff3d9a'; c.shadowBlur=24;
+  c.beginPath(); c.arc(128,140,82,Math.PI,0); c.stroke();
+  c.beginPath(); c.moveTo(46,150); c.quadraticCurveTo(128,205,210,150); c.stroke();
+  c.beginPath(); c.moveTo(56,190); c.lineTo(128,400); c.lineTo(200,190); c.stroke();
+  c.lineWidth=8; for(let i=0;i<4;i++){c.beginPath(); c.moveTo(70+i*30,195); c.lineTo(120+i*12,330); c.stroke();}
+  const t=new THREE.CanvasTexture(cv); t.colorSpace=THREE.SRGBColorSpace;
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(70,115),new THREE.MeshBasicMaterial({map:t,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));
+  m.position.set(560,165,526); P.add(m);
+}
+// spots sur rails sous la toiture
+for(const z of [640,820,1000]) { box(-10,z-2,1400,4,H+12,H+16,black,P,false);
+  for(let x=60;x<1380;x+=170){ const s=new THREE.Mesh(new THREE.CylinderGeometry(4,5,14,10),black); s.position.set(x,H+6,z); P.add(s); glow(x-3,z-3,6,6,H-2,H-1,0xffe7b0); } }
+
+// --- Mobilier de la partie couverte
+const cyanM=M({color:0x16b3c8,roughness:.7}), pinkM=M({color:0xff3d8b,roughness:.75});
+function sofa(x,z,w,facing){ // facing : +1 = assise vers la façade du local (z décroissant)
+  const back = facing>0 ? z+70 : z;  const seatZ = facing>0 ? z : z+10;
+  box(x,z,w,80,0,42,slatM,P); slats(x+4,facing>0?z+80:z,x+w-4,facing>0?z+80:z,0,40,8);
+  box(x+4,seatZ,w-8,70,42,58,cyanM,P,false);
+  box(x,back,w,10,42,100,slatM,P,false); box(x+4,facing>0?back-14:back+10,w-8,14,58,98,cyanM,P,false);
+}
+function table(x,z,w=80,d=80){ box(x,z,w,d,72,76,black,P); box(x+w/2-4,z+d/2-4,8,8,0,72,black,P,false); }
+function pouf(x,z){ const p=new THREE.Mesh(new THREE.CylinderGeometry(24,24,42,24),pinkM); p.position.set(x,21,z); p.castShadow=true; P.add(p); colliders.push({x0:x-24,x1:x+24,z0:z-24,z1:z+24,grp:P}); }
+function egg(x,z){
+  const g=new THREE.Group(); g.position.set(x,0,z);
+  const shell=new THREE.Mesh(new THREE.SphereGeometry(48,22,16,0,Math.PI*2,0,Math.PI*0.82),new THREE.MeshStandardMaterial({color:0xff5aa5,wireframe:true}));
+  shell.scale.set(1,1.35,1); shell.rotation.x=-0.45; shell.position.y=125; g.add(shell);
+  const cush=new THREE.Mesh(new THREE.SphereGeometry(34,18,12),pinkM); cush.scale.set(1,.45,1); cush.position.set(0,92,6); g.add(cush);
+  const chain=new THREE.Mesh(new THREE.CylinderGeometry(1,1,H+20-190,6),M({color:0x999999,metalness:.8})); chain.position.y=190+(H+20-190)/2; g.add(chain);
+  P.add(g); colliders.push({x0:x-48,x1:x+48,z0:z-48,z1:z+48,grp:P});
+}
+function plant(x,z,s=1){
+  const pot=new THREE.Mesh(new THREE.CylinderGeometry(22*s,18*s,52*s,18),black); pot.position.set(x,26*s,z); P.add(pot);
+  colliders.push({x0:x-22,x1:x+22,z0:z-22,z1:z+22,grp:P});
+  const leafM=M({color:0x3f8f3a,roughness:.6,side:THREE.DoubleSide});
+  for(let i=0;i<9;i++){const a=i/9*Math.PI*2, l=new THREE.Mesh(new THREE.PlaneGeometry(16*s,70*s),leafM);
+    l.position.set(x+Math.cos(a)*10*s,(52+38)*s,z+Math.sin(a)*10*s); l.rotation.set(-0.5*Math.sin(a),a,0.5*Math.cos(a)); P.add(l);}
+  glow(x-8,z-8,16,16,52*s,52*s+1,0xffd36b);
+}
+// fauteuils suspendus aux deux extrémités, contre les écrans à lames
+egg(60,640); egg(60,880); egg(1300,640); egg(1300,880);
+// banquettes adossées à la façade du local (assise vers la rue), tables et poufs devant
+sofa(150,590,170,-1); table(195,720); pouf(175,800); pouf(285,800);
+sofa(400,590,300,-1); table(470,720,160,80); pouf(450,800); pouf(560,800); pouf(660,800);
+sofa(760,590,120,-1); table(780,720);
+sofa(1030,590,180,-1); table(1080,720); pouf(1060,800); pouf(1170,800);
+table(880,880); pouf(860,960); pouf(960,960);
+// plantes au pied des poteaux
+[[-5,1040],[350,1040],[710,1040],[1050,1040],[1400,1040]].forEach(([x,z])=>plant(x,z));
+
+// --- Marches éclairées (nez de marche LED)
+glow(-40,1105,1460,2,-3,-1,0xffcf8a); glow(-40,1145,1460,2,-17,-15,0xffcf8a); glow(-40,1185,1460,2,-31,-29,0xffcf8a);
+
+// --- Intérieur : murs roses, comptoir, écrans de menu
+const pinkWall=M({color:0xe9579b,roughness:.8});
+const iw=(x,z,w,h,rot)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),pinkWall); m.position.set(x,h/2,z); m.rotation.y=rot; groups.base.add(m);};
+iw(675,0.6,1350,H,0); iw(0.6,250,500,H,Math.PI/2); iw(1349.4,250,500,H,-Math.PI/2);
+{ const c=new THREE.Mesh(new THREE.PlaneGeometry(1350,500),M({color:0x141416,side:THREE.DoubleSide})); c.rotation.x=Math.PI/2; c.position.set(675,H-1,250); groups.base.add(c); }
+box(80,140,1190,60,0,100,M({color:0xf47db6,roughness:.6}),groups.base);
+box(70,134,1210,72,100,106,black,groups.base,false);
+glow(80,201,1190,2,6,9,0xff2f92,groups.base);
+const menus=[['GLACES','#ff4fa0'],['CRÊPES','#ff4fa0'],['GAUFRES','#ff4fa0'],['BURGERS','#22d3ee'],['TACOS','#22d3ee'],['BOISSONS','#22d3ee']];
+menus.forEach(([t,col],i)=>{
+  const cv=document.createElement('canvas'); cv.width=320; cv.height=180; const c=cv.getContext('2d');
+  c.fillStyle=col; c.fillRect(0,0,320,180); c.fillStyle='#ffffff'; c.font='800 46px Arial'; c.textAlign='center'; c.fillText(t,160,70);
+  c.fillStyle='rgba(255,255,255,.75)'; for(let k=0;k<3;k++) c.fillRect(40,100+k*24,240,10);
+  const tx=new THREE.CanvasTexture(cv); tx.colorSpace=THREE.SRGBColorSpace;
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(150,84),new THREE.MeshBasicMaterial({map:tx})); m.position.set(150+i*210,215,1.5); groups.base.add(m);
+});
+for(let x=120;x<1300;x+=200){ glow(x-3,247,6,6,H-2,H-1,0xffe7b0,groups.base); }
+
+// noms de rue au sol : moins lumineux
+groups.env.children.forEach(o=>{ if(o.material && o.material.isMeshBasicMaterial && o.rotation.x<-1.5) o.material.color.set(0x6f6f6f); });
+// --- Ambiance fin de journée
+scene.background=new THREE.Color(0x4f5b70); scene.fog.color.set(0x4f5b70);
+sun.intensity=0.55; sun.color.set(0xffc89a);
+scene.children.filter(o=>o.isHemisphereLight).forEach(h=>h.intensity=0.5);
+renderer.toneMappingExposure=1.15;
+[[150,200,800,0xff2f92],[560,200,800,0xff4fa0],[880,200,800,0x22d3ee],[1250,200,800,0x22d3ee],[675,220,260,0xffd6e8]].forEach(([x,y,z,c])=>{
+  const l=new THREE.PointLight(c,1.4,650,0); l.position.set(x,y,z); scene.add(l);
+});
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight), 0.5, 0.4, 0.9);
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene,camera)); composer.addPass(bloom); composer.addPass(new OutputPass());
+
+
+/* ---------- Vues ---------- */
+const views={
+  street:[[500,190,2106],[700,230,700]],
+  area:[[1200,3600,4886],[-1800,0,150]],
+  corner:[[2290,500,1986],[1090,150,600]],
+  top:[[715,3000,1600],[715,0,560]],
+  kitchen:[[1000,170,470],[1300,140,290]],
+  counter:[[660,160,470],[600,110,190]],
+  glacier:[[200,160,480],[180,120,40]]
+};
+function setView(v){
+  camera.position.set(...views[v][0]); controls.target.set(...views[v][1]); controls.update();
+  const inside = v==='kitchen'||v==='counter'||v==='glacier';
+  const noUp = v==='top';
+  if(noUp){groups.lid.visible=false; document.getElementById('tLid').checked=false;}
+  if(inside){groups.lid.visible=true; document.getElementById('tLid').checked=true;}
+}
+document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{exitWalk();setView(b.dataset.v);});
+
+/* ---------- Visite à pied ---------- */
+const EYE=165, RADIUS=22;
+let walk=false, yaw=0, pitch=0, drag=null;
+const keys=new Set(), pad=new Set();
+const hud=document.getElementById('hud');
+camera.rotation.order='YXZ';
+const starts={
+  rue:[600,1436,0], glacier:[195,440,0], couverte:[1040,900,0.3], cuisine:[1150,440,-0.3], comptoir:[640,440,0]
+};
+function blocked(x,z){
+  for(const c of colliders){
+    if(!c.grp.visible) continue;
+    const nx=Math.max(c.x0,Math.min(x,c.x1)), nz=Math.max(c.z0,Math.min(z,c.z1));
+    if((x-nx)**2+(z-nz)**2<RADIUS*RADIUS) return true;
+  }
+  return false;
+}
+function enterWalk(where='rue'){
+  const [x,z,a]=starts[where];
+  walk=true; controls.enabled=false; yaw=a; pitch=-0.05;
+  camera.position.set(x,EYE,z); camera.rotation.set(pitch,yaw,0);
+  groups.lid.visible=true; document.getElementById('tLid').checked=true;
+  hud.hidden=false;
+  if(matchMedia('(pointer: fine)').matches){ try{ const p=canvas.requestPointerLock(); if(p&&p.catch) p.catch(()=>{}); }catch(e){} }
+}
+function exitWalk(){
+  if(!walk) return;
+  walk=false; hud.hidden=true; keys.clear(); pad.clear();
+  if(document.pointerLockElement) document.exitPointerLock();
+  const dir=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
+  controls.target.copy(camera.position).addScaledVector(dir,200); controls.enabled=true; controls.update();
+}
+document.querySelectorAll('[data-walk]').forEach(b=>b.onclick=()=>enterWalk(b.dataset.walk));
+document.getElementById('exitWalk').onclick=exitWalk;
+canvas.addEventListener('click',()=>{ if(walk && !document.pointerLockElement && matchMedia('(pointer: fine)').matches){ try{ const p=canvas.requestPointerLock(); if(p&&p.catch) p.catch(()=>{}); }catch(e){} } });
+document.addEventListener('mousemove',e=>{
+  if(walk && document.pointerLockElement===canvas){ yaw-=e.movementX*0.0025; pitch=Math.max(-1.2,Math.min(1.2,pitch-e.movementY*0.0025)); }
+});
+canvas.addEventListener('pointerdown',e=>{ if(walk && !document.pointerLockElement){ drag={x:e.clientX,y:e.clientY}; canvas.setPointerCapture(e.pointerId);} });
+canvas.addEventListener('pointermove',e=>{ if(drag){ yaw+=(e.clientX-drag.x)*0.005; pitch=Math.max(-1.2,Math.min(1.2,pitch+(e.clientY-drag.y)*0.005)); drag={x:e.clientX,y:e.clientY}; } });
+canvas.addEventListener('pointerup',()=>drag=null);
+addEventListener('keydown',e=>{ if(!walk) return; keys.add(e.code); if(e.code.startsWith('Arrow')) e.preventDefault(); });
+addEventListener('keyup',e=>keys.delete(e.code));
+document.querySelectorAll('[data-pad]').forEach(b=>{
+  const k=b.dataset.pad;
+  b.addEventListener('pointerdown',e=>{e.preventDefault();pad.add(k);});
+  ['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>pad.delete(k)));
+});
+const clock=new THREE.Clock();
+function stepWalk(dt){
+  const on=k=>keys.has(k);
+  let f=(on('KeyW')||on('ArrowUp')||pad.has('f')?1:0)-(on('KeyS')||on('ArrowDown')||pad.has('b')?1:0);
+  let s=(on('KeyD')||pad.has('r')?1:0)-(on('KeyA')||pad.has('l')?1:0);
+  if(on('ArrowLeft')||pad.has('tl')) yaw+=1.8*dt;
+  if(on('ArrowRight')||pad.has('tr')) yaw-=1.8*dt;
+  const sp=(on('ShiftLeft')||on('ShiftRight')?320:150)*dt;
+  const fx=-Math.sin(yaw), fz=-Math.cos(yaw), rx=Math.cos(yaw), rz=-Math.sin(yaw);
+  let dx=(fx*f+rx*s), dz=(fz*f+rz*s); const n=Math.hypot(dx,dz)||1; dx*=sp/n; dz*=sp/n;
+  const p=camera.position;
+  if(!blocked(p.x+dx,p.z)) p.x+=dx;
+  if(!blocked(p.x,p.z+dz)) p.z+=dz;
+  p.y=EYE; camera.rotation.set(pitch,yaw,0);
+}
+const bind=(id,g)=>{const el=document.getElementById(id); if(el) el.onchange=e=>groups[g].visible=e.target.checked;};
+bind('tUp','up'); bind('tLid','lid'); bind('tRoof','roof'); bind('tNet','net'); bind('tProp','prop'); bind('tEnv','env');
+setView('street');
+document.getElementById('toggle').onclick=e=>{const p=document.getElementById('panel');p.hidden=!p.hidden;e.target.textContent=p.hidden?'Afficher le panneau':'Masquer le panneau';};
+
+function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false); composer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();}
+addEventListener('resize',resize); resize();
+renderer.setAnimationLoop(()=>{const dt=Math.min(clock.getDelta(),.05); if(walk) stepWalk(dt); else controls.update(); composer.render();});
+</script>
+
+<script>
+  // sur téléphone, on ouvre directement sur la maquette, panneau replié
+  if (window.innerWidth < 700) {
+    const p = document.getElementById('panel'), t = document.getElementById('toggle');
+    p.hidden = true; t.textContent = 'Afficher le panneau';
+  }
+</script>
+</body>
+</html>
