@@ -79,6 +79,7 @@
       <button data-v="area">Quartier</button>
       <button data-v="corner">Angle pizzeria</button>
       <button data-v="top">Dessus sans toit</button>
+      <button class="primary" id="photoBtn">Photo réaliste</button>
     </div>
   </div>
   <div class="grp">
@@ -90,6 +91,7 @@
   </div>
 </div>
 <button id="toggle">Masquer le panneau</button>
+<div id="photoHud" hidden style="position:fixed;left:50%;transform:translateX(-50%);top:calc(12px + env(safe-area-inset-top,0px));background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px"><span></span></div>
 <div id="hud" hidden>
   <div class="pad" aria-label="Déplacement">
     <span></span><button data-pad="f" aria-label="Avancer">▲</button><span></span>
@@ -100,7 +102,7 @@
 </div>
 
 <script type="importmap">
-{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/","three/examples/jsm/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/","three-mesh-bvh":"https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.7.8/build/index.module.js","three-gpu-pathtracer":"https://cdn.jsdelivr.net/npm/three-gpu-pathtracer@0.0.23/build/index.module.js"}}
 </script>
 <script type="module">
 import * as THREE from 'three';
@@ -111,6 +113,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import { WebGLPathTracer } from 'three-gpu-pathtracer';
 
 const H = 280;            // hauteur sous plafond estimée (cm)
 const FLOOR = 290;        // hauteur d'un étage d'habitation (cm), estimée
@@ -817,11 +820,12 @@ for(const mat of [slatM,black]){ mat.map=phTex('black_painted_planks','diff'); m
 for(const mat of [cyanM,pinkM]){ mat.normalMap=phTex('velour_velvet','nor'); mat.roughnessMap=phTex('velour_velvet','rough'); mat.roughness=1; mat.needsUpdate=true; }
 
 // --- Ciel du soir pour les reflets (HDRI Poly Haven)
+let envEquirect=null, envPmrem=null;
 fetch('ph/hdri/modern_evening_street_1k.hdr.txt').then(r=>r.text()).then(b64=>{
   const bin=Uint8Array.from(atob(b64.trim()),c=>c.charCodeAt(0));
   const d=new RGBELoader().parse(bin.buffer);
   const hdr=new THREE.DataTexture(d.data,d.width,d.height,THREE.RGBAFormat,d.type); hdr.mapping=THREE.EquirectangularReflectionMapping; hdr.colorSpace=THREE.LinearSRGBColorSpace; hdr.minFilter=hdr.magFilter=THREE.LinearFilter; hdr.generateMipmaps=false; hdr.flipY=true; hdr.needsUpdate=true;
-  const pm=new THREE.PMREMGenerator(renderer); scene.environment=pm.fromEquirectangular(hdr).texture; hdr.dispose(); pm.dispose();
+  const pm=new THREE.PMREMGenerator(renderer); envPmrem=pm.fromEquirectangular(hdr).texture; scene.environment=envPmrem; envEquirect=hdr; pm.dispose();
   scene.traverse(o=>{ if(o.material && o.material.isMeshStandardMaterial) o.material.envMapIntensity=0.55; });
 }).catch(()=>{});
 
@@ -838,6 +842,64 @@ placeModel('ph/models/potted_plant_04/potted_plant_04_1k.json', plantSpots, 120)
 placeModel('ph/models/pachira_aquatica_01/pachira_aquatica_01_1k.json', [[360,468,170]], 170, groups.base);
 groups.env.children.forEach(o=>{ const p=o.geometry&&o.geometry.parameters; if(p && p.radiusTop===5 && p.height===700) o.visible=false; });
 placeModel('ph/models/street_lamp_01/street_lamp_01_1k.json', [[-900,1960],[1700,1960],[2700,1960]], 560, groups.env);
+
+// --- Mode photo réaliste : path tracing progressif (three-gpu-pathtracer)
+const photo = { on:false, ready:false, pt:null, swaps:[], last:new THREE.Matrix4(), target:150 };
+const photoHud = document.getElementById('photoHud');
+function photoStatus(t){ if(photoHud){ photoHud.hidden=false; photoHud.querySelector('span').textContent=t; } }
+// matériaux « éclairés » (néons, écrans, enseignes) : convertis en émissifs pour que leur lumière compte
+function toEmissive(){
+  scene.traverse(o=>{
+    if(!o.isMesh || !o.material || Array.isArray(o.material)) return;
+    const m=o.material;
+    if(m.isMeshBasicMaterial){
+      const e=new THREE.MeshStandardMaterial({color:0x000000,emissive:m.color.clone(),emissiveMap:m.map||null,emissiveIntensity:m.map?1.4:2.2,map:null,transparent:m.transparent,opacity:m.opacity,side:m.side,alphaMap:m.map&&m.transparent?m.map:null});
+      photo.swaps.push([o,m]); o.material=e;
+    } else if(m.wireframe){                                  // coques des fauteuils suspendus : rotin tressé
+      const e=m.clone(); e.wireframe=false; e.transparent=true; e.opacity=.55; e.roughness=.8;
+      photo.swaps.push([o,m]); o.material=e;
+    }
+  });
+}
+function restoreMaterials(){ photo.swaps.forEach(([o,m])=>o.material=m); photo.swaps=[]; scene.environment=envPmrem; }
+async function startPhoto(){
+  if(photo.on) return;
+  photo.on=true; photoStatus('Préparation de la lumière…');
+  document.getElementById('photoBtn').textContent='Quitter le mode photo';
+  try{
+    if(!photo.pt){
+      // compatibilité : le path tracer lit les rotations d'environnement de three r162+
+      if(!THREE.Scene.prototype.environmentRotation){ THREE.Scene.prototype.environmentRotation=new THREE.Euler(); THREE.Scene.prototype.backgroundRotation=new THREE.Euler(); }
+      photo.pt=new WebGLPathTracer(renderer);
+      photo.pt.tiles.set(2,2);
+      photo.pt.renderScale = Math.min(1, 900/Math.max(innerWidth,innerHeight));
+      photo.pt.textureSize.set(512,512);
+      photo.pt.minSamples=1; photo.pt.fadeDuration=300; photo.pt.dynamicLowRes=true;
+    }
+    toEmissive();
+    scene.environment = envEquirect;      // le path tracer lit le ciel en équirectangulaire
+    await new Promise(r=>setTimeout(r,30));
+    await new Promise(r=>requestAnimationFrame(()=>setTimeout(r,0)));
+    photo.pt.setScene(scene,camera);
+    photo.last.copy(camera.matrixWorld); photo.ready=true;
+  }catch(e){ console.error(e); photoStatus("Le mode photo n'est pas pris en charge par cet appareil."); restoreMaterials(); photo.on=false; setTimeout(()=>photoHud.hidden=true,4000); document.getElementById('photoBtn').textContent='Photo réaliste'; }
+}
+function stopPhoto(){
+  photo.on=false; photo.ready=false; restoreMaterials();
+  if(photoHud) photoHud.hidden=true;
+  document.getElementById('photoBtn').textContent='Photo réaliste';
+}
+document.getElementById('photoBtn').onclick=()=> photo.on ? stopPhoto() : startPhoto();
+function renderFrame(){
+  if(photo.on && photo.ready){
+    // on ne relance le calcul que si la caméra a vraiment bougé (pas les micro-mouvements de l'amortissement)
+    const e=camera.matrixWorld.elements, l=photo.last.elements; let moved=false; for(let i=0;i<16;i++) if(Math.abs(e[i]-l[i])>(i>=12?0.5:1e-3)){ moved=true; break; }
+    if(moved){ photo.last.copy(camera.matrixWorld); photo.pt.updateCamera(); photo.pt.reset(); }
+    if(photo.pt.samples < photo.target) photo.pt.renderSample();
+    const n=Math.floor(photo.pt.samples);
+    photoStatus(n < photo.target ? `Calcul de la lumière : ${Math.round(n/photo.target*100)} %  ·  ne bougez pas pour affiner` : 'Image terminée');
+  } else if(!photo.on) composer.render();
+}
 
 /* ---------- Vues ---------- */
 const views={
@@ -928,7 +990,7 @@ document.getElementById('toggle').onclick=e=>{const p=document.getElementById('p
 
 function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false); composer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();}
 addEventListener('resize',resize); resize();
-renderer.setAnimationLoop(()=>{const dt=Math.min(clock.getDelta(),.05); if(walk) stepWalk(dt); else controls.update(); composer.render();});
+renderer.setAnimationLoop(()=>{const dt=Math.min(clock.getDelta(),.05); if(walk) stepWalk(dt); else controls.update(); renderFrame();});
 </script>
 
 <script>
