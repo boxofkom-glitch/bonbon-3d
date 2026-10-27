@@ -533,23 +533,111 @@ table(880,880); pouf(860,960); pouf(960,960);
 // --- Marches éclairées (nez de marche LED)
 glow(-40,1105,1460,2,-3,-1,0xffcf8a); glow(-40,1145,1460,2,-17,-15,0xffcf8a); glow(-40,1185,1460,2,-31,-29,0xffcf8a);
 
-// --- Intérieur : murs roses, comptoir, écrans de menu
-const pinkWall=M({color:0xe9579b,roughness:.8});
-const iw=(x,z,w,h,rot)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),pinkWall); m.position.set(x,h/2,z); m.rotation.y=rot; groups.base.add(m);};
-iw(675,0.6,1350,H,0); iw(0.6,250,500,H,Math.PI/2); iw(1349.4,250,500,H,-Math.PI/2);
-{ const c=new THREE.Mesh(new THREE.PlaneGeometry(1350,500),M({color:0x141416,side:THREE.DoubleSide})); c.rotation.x=Math.PI/2; c.position.set(675,H-1,250); groups.base.add(c); }
-box(80,140,1190,60,0,100,M({color:0xf47db6,roughness:.6}),groups.base);
-box(70,134,1210,72,100,106,black,groups.base,false);
-glow(80,201,1190,2,6,9,0xff2f92,groups.base);
-const menus=[['GLACES','#ff4fa0'],['CRÊPES','#ff4fa0'],['GAUFRES','#ff4fa0'],['BURGERS','#22d3ee'],['TACOS','#22d3ee'],['BOISSONS','#22d3ee']];
-menus.forEach(([t,col],i)=>{
-  const cv=document.createElement('canvas'); cv.width=320; cv.height=180; const c=cv.getContext('2d');
-  c.fillStyle=col; c.fillRect(0,0,320,180); c.fillStyle='#ffffff'; c.font='800 46px Arial'; c.textAlign='center'; c.fillText(t,160,70);
-  c.fillStyle='rgba(255,255,255,.75)'; for(let k=0;k<3;k++) c.fillRect(40,100+k*24,240,10);
-  const tx=new THREE.CanvasTexture(cv); tx.colorSpace=THREE.SRGBColorSpace;
-  const m=new THREE.Mesh(new THREE.PlaneGeometry(150,84),new THREE.MeshBasicMaterial({map:tx})); m.position.set(150+i*210,215,1.5); groups.base.add(m);
+// --- Intérieur : comptoir SUCRÉ / SALÉ, mur à coulures, plafond néon (intérieur x 0-1350, z 0-500, façade à z 500)
+const IB = groups.base;
+const SPLIT = 660;                                   // limite sucré (est) / salé (ouest)
+function cvTex(w,h,draw){const cv=document.createElement('canvas'); cv.width=w; cv.height=h; draw(cv.getContext('2d'),w,h); const t=new THREE.CanvasTexture(cv); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=8; return t;}
+function panda(c,x,y,r){
+  c.fillStyle='#1b1b1f'; [[-0.75,-0.75],[0.75,-0.75]].forEach(([dx,dy])=>{c.beginPath();c.arc(x+dx*r,y+dy*r,r*0.42,0,7);c.fill();});
+  c.fillStyle='#ffffff'; c.beginPath(); c.arc(x,y,r,0,7); c.fill(); c.lineWidth=r*0.08; c.strokeStyle='#1b1b1f'; c.stroke();
+  c.fillStyle='#1b1b1f'; [[-0.38,-0.05],[0.38,-0.05]].forEach(([dx,dy])=>{c.beginPath();c.ellipse(x+dx*r,y+dy*r,r*0.22,r*0.3,dx>0?0.5:-0.5,0,7);c.fill();});
+  c.fillStyle='#ffffff'; [[-0.35,-0.1],[0.35,-0.1]].forEach(([dx,dy])=>{c.beginPath();c.arc(x+dx*r,y+dy*r,r*0.08,0,7);c.fill();});
+  c.fillStyle='#ff4fa0'; c.beginPath(); c.ellipse(x,y+r*0.3,r*0.14,r*0.09,0,0,7); c.fill();
+  c.fillStyle='#ffd23f'; c.beginPath(); c.moveTo(x-r*0.35,y-r*0.95); c.lineTo(x-r*0.35,y-r*1.25); c.lineTo(x-r*0.17,y-r*1.08); c.lineTo(x,y-r*1.3); c.lineTo(x+r*0.17,y-r*1.08); c.lineTo(x+r*0.35,y-r*1.25); c.lineTo(x+r*0.35,y-r*0.95); c.fill();
+}
+function drips(c,x0,x1,y,color,maxLen){
+  c.fillStyle=color; c.fillRect(x0,0,x1-x0,y);
+  for(let x=x0;x<x1;x+=28){const l=y+12+Math.random()*maxLen; c.beginPath(); c.moveTo(x,y-2); c.lineTo(x,l-11); c.arc(x+11,l-11,11,Math.PI,0,true); c.lineTo(x+22,y-2); c.fill();}
+}
+function neonText(c,t,x,y,size,col){ c.font=`800 ${size}px Arial`; c.textAlign='center'; c.shadowColor=col; c.shadowBlur=size*0.5; c.fillStyle='#ffffff'; c.fillText(t,x,y); c.shadowBlur=0; }
+
+// murs latéraux et mur du fond (fresque à coulures + néons SUCRÉ / SALÉ)
+const sideM=M({color:0x1a1a1e,roughness:.8});
+[[0.6,250,Math.PI/2],[1349.4,250,-Math.PI/2]].forEach(([x,z,r])=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(500,H),sideM); m.position.set(x,H/2,z); m.rotation.y=r; IB.add(m);});
+const mural=cvTex(2700,560,(c,w,h)=>{
+  c.fillStyle='#111114'; c.fillRect(0,0,w,h);
+  const sx=SPLIT/1350*w;
+  drips(c,0,sx,190,'#ff4fa0',140); drips(c,sx,w,190,'#1fb8d0',140);
+  c.fillStyle='#ff7fbf'; c.fillRect(0,0,sx,60); c.fillStyle='#53d6e6'; c.fillRect(sx,0,w-sx,60);
+  neonText(c,'SUCRÉ',sx*0.42,118,84,'#ff4fa0'); neonText(c,'SALÉ',sx+(w-sx)*0.42,118,84,'#22d3ee');
+  panda(c,sx-150,105,48);
 });
-for(let x=120;x<1300;x+=200){ glow(x-3,247,6,6,H-2,H-1,0xffe7b0,groups.base); }
+{ const m=new THREE.Mesh(new THREE.PlaneGeometry(1350,H),new THREE.MeshStandardMaterial({map:mural,roughness:.7,emissive:0xffffff,emissiveMap:mural,emissiveIntensity:.18})); m.position.set(675,H/2,0.6); IB.add(m); }
+
+// écrans de menu au-dessus de chaque partie
+function menuScreen(x,col,title,i){
+  const t=cvTex(320,190,(c,w,h)=>{c.fillStyle='#16161a'; c.fillRect(0,0,w,h); c.fillStyle=col; c.fillRect(0,0,w,40);
+    c.fillStyle='#fff'; c.font='800 28px Arial'; c.textAlign='left'; c.fillText(title,14,29);
+    const pal=col==='#ff4fa0'?['#f7c6dc','#ffd98a','#e86a9a']:['#f2b44a','#9ed36a','#e5893a'];
+    for(let k=0;k<2;k++){c.fillStyle=pal[(i+k)%3]; c.beginPath(); c.ellipse(80+k*160,115,58,42,0,0,7); c.fill();}
+    c.fillStyle='rgba(255,255,255,.6)'; c.fillRect(14,168,180,8);});
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(105,62),new THREE.MeshBasicMaterial({map:t})); m.position.set(x,182,2); IB.add(m);
+}
+['GLACES','CRÊPES','GAUFRES','GRANITAS','CHURROS'].forEach((t,i)=>menuScreen(90+i*112,'#ff4fa0',t,i));
+['BURGERS','TACOS','PANINIS','FRITES','SNACKS'].forEach((t,i)=>menuScreen(SPLIT+60+i*112,'#22d3ee',t,i));
+
+// hotte inox et ligne de cuisine côté salé, le long du mur du fond
+const inoxP=M({color:0xc9cdd1,metalness:.8,roughness:.3});
+box(1060,0,280,95,210,262,inoxP,IB,false);
+box(SPLIT+20,0,640,70,0,90,inoxP,IB); box(SPLIT+20,0,640,72,90,94,M({color:0x2a2a2e,metalness:.6}),IB,false);
+for(let x=SPLIT+60;x<1280;x+=120) box(x,10,70,50,94,112,M({color:0x3a3a40,metalness:.5}),IB,false);
+box(40,0,560,60,0,90,M({color:0xf2a6c8,roughness:.6}),IB); box(40,0,560,62,90,93,M({color:0xffffff}),IB,false);   // plan sucré
+
+// grand comptoir : façade SUCRÉ (rose à coulures + panda) / SALÉ (cyan à lames), LED en pied
+const ZC=170, DC=60, HC=105;
+const frontS=cvTex(1160,210,(c,w,h)=>{c.fillStyle='#ff6fb1'; c.fillRect(0,0,w,h); drips(c,0,w,22,'#ffffff',36);
+  neonText(c,'SUCRÉ',w*0.3,140,82,'#ff2f92'); panda(c,w*0.72,115,52);});
+const frontL=cvTex(1260,210,(c,w,h)=>{c.fillStyle='#22c1d6'; c.fillRect(0,0,w,h); c.fillStyle='rgba(0,0,0,.12)'; for(let x=0;x<w;x+=18) c.fillRect(x,0,4,h);
+  neonText(c,'SALÉ',w*0.3,140,82,'#22d3ee'); panda(c,w*0.8,110,40);});
+box(60,ZC,SPLIT-60,DC,0,HC,M({color:0xff6fb1,roughness:.6}),IB);
+box(SPLIT,ZC,1290-SPLIT,DC,0,HC,M({color:0x22c1d6,roughness:.6}),IB);
+{ const a=new THREE.Mesh(new THREE.PlaneGeometry(SPLIT-60,HC-8),new THREE.MeshStandardMaterial({map:frontS,emissive:0xffffff,emissiveMap:frontS,emissiveIntensity:.25})); a.position.set((60+SPLIT)/2,(HC-8)/2+8,ZC+DC+0.6); IB.add(a);
+  const b=new THREE.Mesh(new THREE.PlaneGeometry(1290-SPLIT,HC-8),new THREE.MeshStandardMaterial({map:frontL,emissive:0xffffff,emissiveMap:frontL,emissiveIntensity:.25})); b.position.set((SPLIT+1290)/2,(HC-8)/2+8,ZC+DC+0.6); IB.add(b); }
+box(55,ZC-5,1240,DC+10,HC,HC+5,M({color:0x2b2b30,metalness:.6,roughness:.3}),IB,false);
+glow(60,ZC+DC+1,SPLIT-60,2,2,6,0xff2f92,IB); glow(SPLIT,ZC+DC+1,1290-SPLIT,2,2,6,0x22d3ee,IB);
+// vitrines réfrigérées, caisses
+const vitM=new THREE.MeshPhysicalMaterial({color:0xdff3ff,transparent:true,opacity:.28,roughness:.05});
+[[100,200],[330,180],[700,200],[930,160]].forEach(([x,w])=>{ box(x,ZC+5,w,48,HC+5,HC+40,vitM,IB,false); glow(x,ZC+8,w,40,HC+6,HC+8,0xfff1d6,IB);
+  for(let k=0;k<Math.floor(w/40);k++) box(x+10+k*40,ZC+15,26,26,HC+8,HC+16,M({color:[0xf7c6dc,0xffd98a,0xe5893a,0x9ed36a][(k+x)%4]}),IB,false); });
+[[560,ZC+20],[1120,ZC+20]].forEach(([x,z])=>{ box(x,z,40,6,HC+5,HC+38,M({color:0x111111}),IB,false); });
+// frigo boissons (salé)
+box(1295,ZC-10,50,70,0,195,M({color:0x1c1c20}),IB); glow(1297,ZC+59,46,2,12,188,0x9fe8ff,IB);
+// enseigne BON&BON suspendue au-dessus du comptoir
+{ const t=cvTex(700,240,(c,w,h)=>{c.fillStyle='#0d0d10'; c.fillRect(0,0,w,h); c.lineJoin='round'; c.textAlign='center'; c.font='900 120px Arial Black, Arial';
+    c.lineWidth=22; c.strokeStyle='#ff2f92'; c.strokeText('BON',190,135); c.strokeStyle='#22d3ee'; c.strokeText('BON',510,135); c.fillStyle='#fff'; c.fillText('BON',190,135); c.fillText('BON',510,135);
+    c.fillStyle='#ff2f92'; c.font='900 90px Arial Black, Arial'; c.fillText('&',350,130); c.font='800 42px Arial'; c.fillStyle='#ffe14d'; c.fillText('SWEET AND SALT',350,210);});
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(170,58),new THREE.MeshBasicMaterial({map:t})); m.position.set(SPLIT,240,ZC+DC+15); IB.add(m);
+  box(SPLIT-86,ZC+DC+12,172,3,211,269,M({color:0x0d0d10}),IB,false); }
+
+// plafond noir, anneaux et lignes néon, spots, plantes suspendues
+{ const c=new THREE.Mesh(new THREE.PlaneGeometry(1350,500),M({color:0x111114,side:THREE.DoubleSide})); c.rotation.x=Math.PI/2; c.position.set(675,H-1,250); IB.add(c); }
+[[300,340],[1000,340]].forEach(([x,z])=>{const r=new THREE.Mesh(new THREE.TorusGeometry(55,2,8,48),new THREE.MeshBasicMaterial({color:0xff3d9a})); r.rotation.x=Math.PI/2; r.position.set(x,H-6,z); IB.add(r);});
+glow(0,ZC+DC+30,SPLIT,3,H-5,H-3,0xff2f92,IB); glow(SPLIT,ZC+DC+30,690,3,H-5,H-3,0x22d3ee,IB);
+for(let x=80;x<1300;x+=130){ const s=new THREE.Mesh(new THREE.CylinderGeometry(4,5,14,10),M({color:0x111111})); s.position.set(x,H-9,ZC+DC+60); IB.add(s); glow(x-3,ZC+DC+57,6,6,H-17,H-16,0xffe7b0,IB); }
+const vine=M({color:0x3f8f3a,roughness:.6,side:THREE.DoubleSide});
+[[150,320],[480,300],[820,300],[1180,320],[230,450],[1100,450]].forEach(([x,z])=>{
+  const pot=new THREE.Mesh(new THREE.CylinderGeometry(14,11,16,12),M({color:0x111111})); pot.position.set(x,H-38,z); IB.add(pot);
+  for(let k=0;k<7;k++){const l=new THREE.Mesh(new THREE.PlaneGeometry(10,40+Math.random()*30),vine); const a=k/7*Math.PI*2; l.position.set(x+Math.cos(a)*10,H-70,z+Math.sin(a)*10); l.rotation.y=a; IB.add(l);}
+  const w=new THREE.Mesh(new THREE.CylinderGeometry(.6,.6,30,4),M({color:0x222222})); w.position.set(x,H-15,z); IB.add(w);
+});
+
+// salle : tables, chaises roses, banquettes bleues côté façade
+function chair(x,z,rot=0){const g=new THREE.Group(); g.position.set(x,0,z); g.rotation.y=rot;
+  const seat=new THREE.Mesh(new THREE.CylinderGeometry(22,22,12,20),pinkM); seat.position.y=58; g.add(seat);
+  const back=new THREE.Mesh(new THREE.CylinderGeometry(22,22,30,20,1,true,Math.PI*0.25,Math.PI*1.5),M({color:0xff3d8b,side:THREE.DoubleSide})); back.position.y=80; g.add(back);
+  [[-14,-14],[14,-14],[-14,14],[14,14]].forEach(([a,b])=>{const l=new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.5,52,6),M({color:0x111111})); l.position.set(a,26,b); g.add(l);});
+  IB.add(g); colliders.push({x0:x-22,x1:x+22,z0:z-22,z1:z+22,grp:IB});}
+function rtable(x,z){const t=new THREE.Mesh(new THREE.CylinderGeometry(35,35,4,24),M({color:0x141416})); t.position.set(x,74,z); IB.add(t);
+  const l=new THREE.Mesh(new THREE.CylinderGeometry(3,3,72,8),M({color:0x141416})); l.position.set(x,36,z); IB.add(l); colliders.push({x0:x-35,x1:x+35,z0:z-35,z1:z+35,grp:IB});
+  glow(x-3,z-3,6,6,76,84,0xffc46b,IB);}
+// banquette bleue le long du mur plein de façade (x 390-730), dos au mur
+box(400,440,320,55,0,42,slatM,IB); box(404,440,312,50,42,56,cyanM,IB,false); box(400,488,320,12,42,105,cyanM,IB,false);
+[480,640].forEach(x=>{ rtable(x,385); chair(x,325,Math.PI); });
+// coin glacier (x 0-390) : tables hautes et chaises roses
+[[110,330],[280,330],[110,440],[280,440]].forEach(([x,z])=>{ rtable(x,z); chair(x-45,z,Math.PI/2); chair(x+45,z,-Math.PI/2); });
+// éclairage d'ambiance intérieur
+[[330,200,330,0xff2f92],[1000,200,330,0x22d3ee],[660,230,250,0xffe2ef]].forEach(([x,y,z,c])=>{const l=new THREE.PointLight(c,1.2,560,0); l.position.set(x,y,z); scene.add(l);});
+
 
 // noms de rue au sol : moins lumineux
 groups.env.children.forEach(o=>{ if(o.material && o.material.isMeshBasicMaterial && o.rotation.x<-1.5) o.material.color.set(0x6f6f6f); });
