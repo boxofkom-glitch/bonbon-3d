@@ -524,16 +524,18 @@ function plant(x,z,s=1){
   plantSpots.push([x,z,120*s]); colliders.push({x0:x-25,x1:x+25,z0:z-25,z1:z+25,grp:P});
   glow(x-8,z-8,16,16,1,2,0xffd36b);
 }
-// fauteuils suspendus aux deux extrémités, contre les écrans à lames
-egg(60,640); egg(60,880); egg(1300,640); egg(1300,880);
-// banquettes adossées à la façade du local (assise vers la rue), tables et poufs devant
-sofa(150,590,170,-1); table(195,720); pouf(175,800); pouf(285,800);
-sofa(400,590,300,-1); table(470,720,160,80); pouf(450,800); pouf(560,800); pouf(660,800);
-sofa(760,590,120,-1); table(780,720);
-sofa(1030,590,180,-1); table(1080,720); pouf(1060,800); pouf(1170,800);
-table(880,880); pouf(860,960); pouf(960,960);
-// plantes au pied des poteaux
-[[-5,1040],[350,1040],[710,1040],[1050,1040],[1400,1040]].forEach(([x,z])=>plant(x,z));
+// Terrasse : mobilier côté rue, dos à la rue. Allée libre de 2,80 m le long de la façade (z 520-806),
+// entrées depuis les marches : principale 1,46 m (x 714-860) + 1,10 m (x 580-690), et passages aux poteaux.
+// travée est : salon de fauteuils suspendus
+egg(60,840); egg(60,990); table(140,885,60,60); pouf(230,860); pouf(230,960);
+// banquettes 4 places + tables, poufs face aux banquettes
+sofa(360,990,220,1); table(400,885,140,80); pouf(420,830); pouf(540,830);
+sofa(860,990,145,1); table(872,885,120,80); pouf(895,830); pouf(980,830);
+sofa(1075,990,150,1); table(1090,885,120,80); pouf(1110,830); pouf(1195,830);
+// travée ouest : fauteuils suspendus
+egg(1305,840); egg(1305,990);
+// plantes au pied des poteaux, sans gêner les entrées
+[[-5,1040],[335,1035],[1040,1040],[1400,1040]].forEach(([x,z])=>plant(x,z));
 
 // --- Marches éclairées (nez de marche LED)
 glow(-40,1105,1460,2,-3,-1,0xffcf8a); glow(-40,1145,1460,2,-17,-15,0xffcf8a); glow(-40,1185,1460,2,-31,-29,0xffcf8a);
@@ -585,10 +587,10 @@ function menuScreen(x,col,title,i){
 
 // hotte inox et ligne de cuisine côté salé, le long du mur du fond
 const inoxP=M({color:0xc9cdd1,metalness:.8,roughness:.3});
-box(1060,0,280,95,210,262,inoxP,IB,false);
-box(SPLIT+20,0,640,70,0,90,inoxP,IB); box(SPLIT+20,0,640,72,90,94,M({color:0x2a2a2e,metalness:.6}),IB,false);
-for(let x=SPLIT+60;x<1280;x+=120) box(x,10,70,50,94,112,M({color:0x3a3a40,metalness:.5}),IB,false);
-box(40,0,560,60,0,90,M({color:0xf2a6c8,roughness:.6}),IB); box(40,0,560,62,90,93,M({color:0xffffff}),IB,false);   // plan sucré
+
+
+
+
 
 // grand comptoir : façade SUCRÉ (rose à coulures + panda) / SALÉ (cyan à lames), LED en pied
 const ZC=170, DC=60, HC=105;
@@ -596,19 +598,19 @@ const frontS=cvTex(1160,210,(c,w,h)=>{c.fillStyle='#ff6fb1'; c.fillRect(0,0,w,h)
   neonText(c,'SUCRÉ',w*0.3,140,82,'#ff2f92'); panda(c,w*0.72,115,52);});
 const frontL=cvTex(1260,210,(c,w,h)=>{c.fillStyle='#22c1d6'; c.fillRect(0,0,w,h); c.fillStyle='rgba(0,0,0,.12)'; for(let x=0;x<w;x+=18) c.fillRect(x,0,4,h);
   neonText(c,'SALÉ',w*0.3,140,82,'#22d3ee'); panda(c,w*0.8,110,40);});
-box(60,ZC,SPLIT-60,DC,0,HC,M({color:0xff6fb1,roughness:.6}),IB);
-box(SPLIT,ZC,1290-SPLIT,DC,0,HC,M({color:0x22c1d6,roughness:.6}),IB);
-{ const a=new THREE.Mesh(new THREE.PlaneGeometry(SPLIT-60,HC-8),new THREE.MeshStandardMaterial({map:frontS,emissive:0xffffff,emissiveMap:frontS,emissiveIntensity:.25})); a.position.set((60+SPLIT)/2,(HC-8)/2+8,ZC+DC+0.6); IB.add(a);
-  const b=new THREE.Mesh(new THREE.PlaneGeometry(1290-SPLIT,HC-8),new THREE.MeshStandardMaterial({map:frontL,emissive:0xffffff,emissiveMap:frontL,emissiveIntensity:.25})); b.position.set((SPLIT+1290)/2,(HC-8)/2+8,ZC+DC+0.6); IB.add(b); }
-box(55,ZC-5,1240,DC+10,HC,HC+5,M({color:0x2b2b30,metalness:.6,roughness:.3}),IB,false);
-glow(60,ZC+DC+1,SPLIT-60,2,2,6,0xff2f92,IB); glow(SPLIT,ZC+DC+1,1290-SPLIT,2,2,6,0x22d3ee,IB);
+box(0,ZC,SPLIT,DC,0,HC,M({color:0xff6fb1,roughness:.6}),IB);
+box(SPLIT,ZC,1200-SPLIT,DC,0,HC,M({color:0x22c1d6,roughness:.6}),IB);
+{ const a=new THREE.Mesh(new THREE.PlaneGeometry(SPLIT,HC-8),new THREE.MeshStandardMaterial({map:frontS,emissive:0xffffff,emissiveMap:frontS,emissiveIntensity:.25})); a.position.set(SPLIT/2,(HC-8)/2+8,ZC+DC+0.6); IB.add(a);
+  const b=new THREE.Mesh(new THREE.PlaneGeometry(1200-SPLIT,HC-8),new THREE.MeshStandardMaterial({map:frontL,emissive:0xffffff,emissiveMap:frontL,emissiveIntensity:.25})); b.position.set((SPLIT+1200)/2,(HC-8)/2+8,ZC+DC+0.6); IB.add(b); }
+box(0,ZC-5,1205,DC+10,HC,HC+5,M({color:0x2b2b30,metalness:.6,roughness:.3}),IB,false);
+glow(0,ZC+DC+1,SPLIT,2,2,6,0xff2f92,IB); glow(SPLIT,ZC+DC+1,1200-SPLIT,2,2,6,0x22d3ee,IB);
 // vitrines réfrigérées, caisses
 const vitM=new THREE.MeshPhysicalMaterial({color:0xdff3ff,transparent:true,opacity:.28,roughness:.05});
-[[100,200],[330,180],[700,200],[930,160]].forEach(([x,w])=>{ box(x,ZC+5,w,48,HC+5,HC+40,vitM,IB,false); glow(x,ZC+8,w,40,HC+6,HC+8,0xfff1d6,IB);
+[[60,220],[320,200],[700,200],[940,180]].forEach(([x,w])=>{ box(x,ZC+5,w,48,HC+5,HC+40,vitM,IB,false); glow(x,ZC+8,w,40,HC+6,HC+8,0xfff1d6,IB);
   for(let k=0;k<Math.floor(w/40);k++) box(x+10+k*40,ZC+15,26,26,HC+8,HC+16,M({color:[0xf7c6dc,0xffd98a,0xe5893a,0x9ed36a][(k+x)%4]}),IB,false); });
-[[560,ZC+20],[1120,ZC+20]].forEach(([x,z])=>{ box(x,z,40,6,HC+5,HC+38,M({color:0x111111}),IB,false); });
+[[560,ZC+20],[1150,ZC+20]].forEach(([x,z])=>{ box(x,z,40,6,HC+5,HC+38,M({color:0x111111}),IB,false); });
 // frigo boissons (salé)
-box(1295,ZC-10,50,70,0,195,M({color:0x1c1c20}),IB); glow(1297,ZC+59,46,2,12,188,0x9fe8ff,IB);
+box(1280,250,65,75,0,195,M({color:0x1c1c20}),IB); glow(1277,255,2,65,12,188,0x9fe8ff,IB);
 // enseigne BON&BON suspendue au-dessus du comptoir
 { const t=cvTex(700,240,(c,w,h)=>{c.fillStyle='#0d0d10'; c.fillRect(0,0,w,h); c.lineJoin='round'; c.textAlign='center'; c.font='900 120px Arial Black, Arial';
     c.lineWidth=22; c.strokeStyle='#ff2f92'; c.strokeText('BON',190,135); c.strokeStyle='#22d3ee'; c.strokeText('BON',510,135); c.fillStyle='#fff'; c.fillText('BON',190,135); c.fillText('BON',510,135);
@@ -637,11 +639,81 @@ function chair(x,z,rot=0){const g=new THREE.Group(); g.position.set(x,0,z); g.ro
 function rtable(x,z){const t=new THREE.Mesh(new THREE.CylinderGeometry(35,35,4,24),M({color:0x141416})); t.position.set(x,74,z); IB.add(t);
   const l=new THREE.Mesh(new THREE.CylinderGeometry(3,3,72,8),M({color:0x141416})); l.position.set(x,36,z); IB.add(l); colliders.push({x0:x-35,x1:x+35,z0:z-35,z1:z+35,grp:IB});
   glow(x-3,z-3,6,6,76,84,0xffc46b,IB);}
-// banquette bleue le long du mur plein de façade (x 390-730), dos au mur
-box(400,440,320,55,0,42,slatM,IB); box(404,440,312,50,42,56,cyanM,IB,false); box(400,488,320,12,42,105,cyanM,IB,false);
-[480,640].forEach(x=>{ rtable(x,385); chair(x,325,Math.PI); });
-// coin glacier (x 0-390) : tables hautes et chaises roses
-[[110,330],[280,330],[110,440],[280,440]].forEach(([x,z])=>{ rtable(x,z); chair(x-45,z,Math.PI/2); chair(x+45,z,-Math.PI/2); });
+// file d'attente libre de 1,35 m devant le comptoir (z 230-365)
+// banquette bleue contre le mur plein de façade (x 400-720), 2 petites tables
+box(400,445,320,55,0,42,slatM,IB); box(404,445,312,50,42,56,cyanM,IB,false); box(400,488,320,12,42,105,cyanM,IB,false);
+[480,640].forEach(x=>rtable(x,400));
+// coin glacier : 2 tables le long du mur est (sous la fresque), passage libre de 2,30 m vers l'ouverture
+[[60,300],[60,430]].forEach(([x,z])=>{ rtable(x,z); chair(x+62,z,-Math.PI/2); });
+// sortie de secours signalée au-dessus de la porte arrière (mur ouest)
+{ const t=cvTex(256,96,(c,w,h)=>{c.fillStyle='#0b8f3a'; c.fillRect(0,0,w,h); c.fillStyle='#fff'; c.font='800 40px Arial'; c.textAlign='center'; c.fillText('SORTIE',w/2,62);});
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(40,15),new THREE.MeshBasicMaterial({map:t})); m.position.set(1348.5,224,440); m.rotation.y=-Math.PI/2; IB.add(m); }
+// --- Cuisine et comptoir équipés (mur du fond z 0-70, passage personnel z 70-170, comptoir z 170-230)
+const steel=M({color:0xc9cdd1,metalness:.85,roughness:.28}), darkSteel=M({color:0x2c2e33,metalness:.7,roughness:.35}),
+      blackPl=M({color:0x111214,roughness:.4}), handleM=M({color:0xdfe3e6,metalness:.9,roughness:.2});
+function unit(x,w,col,doors=2){ box(x,2,w,62,10,88,col,IB); box(x,0,w,66,88,92,steel,IB,false); box(x+2,2,w-4,2,0,10,blackPl,IB,false);
+  for(let i=0;i<doors;i++){ box(x+4+i*(w-8)/doors,63.5,(w-8)/doors-4,1,14,84,col,IB,false); box(x+i*(w-8)/doors+(w-8)/doors/2,64.5,14,1.5,74,76,handleM,IB,false);} }
+function cyl(x,y,z,r,h,mat,seg=20){const c=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,seg),mat); c.position.set(x,y+h/2,z); c.castShadow=true; IB.add(c); return c;}
+
+// ===== Côté SUCRÉ (x 0-660)
+const pinkLac=M({color:0xf7a7cb,roughness:.35});
+unit(15,210,pinkLac); unit(225,210,pinkLac); unit(435,210,pinkLac);
+// 2 crêpières (plaques fonte sur socle inox)
+[70,150].forEach(x=>{ box(x-34,8,68,52,92,104,steel,IB,false); cyl(x,104,34,25,3,blackPl,32); box(x+20,58,10,4,96,100,M({color:0xff3d3d,emissive:0xff2020,emissiveIntensity:.6}),IB,false); });
+// 2 gaufriers
+[250,320].forEach(x=>{ box(x-24,10,48,46,92,104,darkSteel,IB,false); box(x-22,12,44,42,104,118,blackPl,IB,false); box(x-4,54,8,10,110,114,handleM,IB,false); });
+// machine à glace italienne (2 parfums + mix)
+box(380,6,60,58,92,165,steel,IB,false); box(386,64,48,2,140,160,M({color:0x22c1d6,emissive:0x22c1d6,emissiveIntensity:.4}),IB,false);
+[395,410,425].forEach(x=>{ box(x-3,60,6,14,120,126,darkSteel,IB,false); box(x-1.5,72,3,3,126,140,handleM,IB,false); });
+// chauffe-chocolat et blender
+cyl(480,92,32,13,22,steel); cyl(480,114,32,11,4,M({color:0x5a2e1a,roughness:.3}));
+cyl(525,92,30,9,14,darkSteel); cyl(525,106,30,8,24,new THREE.MeshPhysicalMaterial({color:0xffffff,transparent:true,opacity:.35,roughness:.05}));
+// évier sucré + mitigeur
+box(565,10,60,46,88.5,93,darkSteel,IB,false); cyl(595,93,12,2,24,handleM,10); box(593,12,4,16,115,118,handleM,IB,false);
+// étagère murale inox sous les écrans
+box(15,0,620,28,123,126,steel,IB,false);
+[40,120,200,280,360,440,520,600].forEach((x,i)=>cyl(x,126,14,6,14,M({color:[0xffd98a,0xf7c6dc,0x5a2e1a,0xffffff][i%4],roughness:.5}),12));
+
+// ===== Côté SALÉ (x 660-1350)
+unit(680,90,steel,1);                                   // friteuse double
+box(684,6,82,56,92,94,darkSteel,IB,false); [700,740].forEach(x=>{ box(x-14,12,28,32,93,94.5,M({color:0xb98a1a,roughness:.2,metalness:.3}),IB,false); box(x-12,14,24,26,95,108,M({color:0x9aa0a6,wireframe:true}),IB,false); box(x-2,40,4,20,104,107,blackPl,IB,false); });
+unit(775,110,steel,2);                                  // plancha
+box(780,4,100,58,92,96,M({color:0x3a3b3f,metalness:.8,roughness:.25}),IB,false); box(780,2,100,4,96,112,steel,IB,false);
+unit(890,130,steel,2);                                  // saladette réfrigérée + bain-marie
+const gastro=[0x9ed36a,0xe5893a,0xf2d45c,0xd94b3a,0x8a5a3a,0xf2f2f2];
+for(let i=0;i<6;i++){ box(895+i*20,8,18,30,90,93,M({color:gastro[i],roughness:.6}),IB,false); }
+box(892,4,126,4,93,125,new THREE.MeshPhysicalMaterial({color:0xe8f6ff,transparent:true,opacity:.3,roughness:.05}),IB,false);
+unit(1025,120,steel,2);                                 // plan de préparation
+box(1040,10,40,30,92,94,M({color:0xffffff,roughness:.4}),IB,false);   // planche à découper
+unit(1150,90,steel,1);                                  // plonge
+box(1160,10,70,44,88.5,93,darkSteel,IB,false); cyl(1195,93,8,2.5,32,handleM,10); box(1193,8,4,22,122,125,handleM,IB,false);
+box(1245,4,80,60,0,190,steel,IB);                       // armoire froide positive
+box(1247,64.5,2,2,40,150,handleM,IB,false);
+// hotte au-dessus des appareils de cuisson (friteuse, plancha, bain-marie)
+box(670,0,360,105,205,262,steel,IB,false);
+box(675,95,350,4,206,214,darkSteel,IB,false);
+for(let x=690;x<1020;x+=55) box(x,60,50,2,214,250,M({color:0x8e939a,metalness:.8,roughness:.4}),IB,false);
+{ const d=new THREE.Mesh(new THREE.CylinderGeometry(20,20,22,20),steel); d.position.set(850,H-9,40); IB.add(d); }
+// étagère murale côté salé
+box(1030,0,200,28,150,153,steel,IB,false);
+
+// ===== Comptoir : côté personnel, vitrines, caisses
+// frigos sous comptoir (portes vitrées noires côté personnel)
+for(let x=20;x<1180;x+=96){ box(x,ZC-1,90,1,12,95,M({color:0x1a1b1f,roughness:.2,metalness:.4}),IB,false); box(x+70,ZC-2,3,1,30,80,handleM,IB,false); }
+// vitrine à glaces (bacs de crème glacée)
+const gel=[0xfff3d6,0xf7c6dc,0x5a2e1a,0xc8e6a0,0xffd98a,0xe86a9a,0xf2f2f2,0x9ed3e8];
+for(let i=0;i<8;i++){ const x=75+(i%4)*48, z=ZC+12+Math.floor(i/4)*22; box(x,z,40,18,HC+5,HC+12,M({color:gel[i],roughness:.8}),IB,false); }
+// pare-haleine inclinés au-dessus des vitrines
+const sneeze=new THREE.MeshPhysicalMaterial({color:0xe8f6ff,transparent:true,opacity:.22,roughness:.05});
+[[60,220],[320,200],[700,200],[940,180]].forEach(([x,w])=>{ const p=new THREE.Mesh(new THREE.PlaneGeometry(w,40),sneeze); p.position.set(x+w/2,HC+58,ZC+DC-6); p.rotation.x=-0.5; IB.add(p);
+  box(x,ZC+4,w,2,HC+40,HC+42,steel,IB,false); });
+// caisses tactiles + TPE
+[[560,ZC+20],[1150,ZC+20]].forEach(([x,z])=>{ box(x,z,24,18,HC+5,HC+9,darkSteel,IB,false); box(x+10,z+6,4,4,HC+9,HC+24,darkSteel,IB,false);
+  const scr=new THREE.Mesh(new THREE.PlaneGeometry(32,22),new THREE.MeshBasicMaterial({color:0x9fd8ff})); scr.position.set(x+12,HC+34,z+10); scr.rotation.x=-0.35; IB.add(scr);
+  box(x+34,z+30,9,14,HC+5,HC+8,blackPl,IB,false); });
+// frigo boissons rempli
+for(let r=0;r<5;r++) for(let c=0;c<5;c++) cyl(1290+ (c%5)*10,22+r*35,258+(c*12)%60,3.2,20,M({color:[0x22c1d6,0xff3d8b,0xffd23f,0x7ad36a,0xff8a3d][(r+c)%5],roughness:.3}),10);
+
 // bannière de la marque en fresque sur le mur intérieur côté glacier
 { const m=new THREE.Mesh(new THREE.PlaneGeometry(470,187),new THREE.MeshStandardMaterial({map:imgTex('img/banniere.jpg'),roughness:.8,emissive:0xffffff,emissiveMap:imgTex('img/banniere.jpg'),emissiveIntensity:.25}));
   m.position.set(1.2,165,250); m.rotation.y=Math.PI/2; IB.add(m); }
@@ -690,10 +762,13 @@ for(const mat of [slatM,black]){ mat.map=phTex('black_painted_planks','diff'); m
 for(const mat of [cyanM,pinkM]){ mat.normalMap=phTex('velour_velvet','nor'); mat.roughnessMap=phTex('velour_velvet','rough'); mat.roughness=1; mat.needsUpdate=true; }
 
 // --- Ciel du soir pour les reflets (HDRI Poly Haven)
-new RGBELoader().load('ph/hdri/modern_evening_street_1k.hdr', hdr=>{
+fetch('ph/hdri/modern_evening_street_1k.hdr.txt').then(r=>r.text()).then(b64=>{
+  const bin=Uint8Array.from(atob(b64.trim()),c=>c.charCodeAt(0));
+  const d=new RGBELoader().parse(bin.buffer);
+  const hdr=new THREE.DataTexture(d.data,d.width,d.height,THREE.RGBAFormat,d.type); hdr.mapping=THREE.EquirectangularReflectionMapping; hdr.colorSpace=THREE.LinearSRGBColorSpace; hdr.minFilter=hdr.magFilter=THREE.LinearFilter; hdr.generateMipmaps=false; hdr.flipY=true; hdr.needsUpdate=true;
   const pm=new THREE.PMREMGenerator(renderer); scene.environment=pm.fromEquirectangular(hdr).texture; hdr.dispose(); pm.dispose();
   scene.traverse(o=>{ if(o.material && o.material.isMeshStandardMaterial) o.material.envMapIntensity=0.55; });
-});
+}).catch(()=>{});
 
 // --- Modèles 3D Poly Haven : plantes en pot, grande plante, lampadaires
 const gltfLoader=new GLTFLoader();
@@ -704,10 +779,10 @@ function placeModel(url,spots,height,grp=P){
     spots.forEach(([x,z,h])=>{ const c=src.clone(true); const kk=(h||height)/s.y; c.scale.setScalar(kk); c.position.set(x-(bb.min.x+s.x/2)*kk,-bb.min.y*kk,z-(bb.min.z+s.z/2)*kk); c.rotation.y=Math.random()*Math.PI*2; grp.add(c); });
   });
 }
-placeModel('ph/models/potted_plant_04/potted_plant_04_1k.gltf', plantSpots, 120);
-placeModel('ph/models/pachira_aquatica_01/pachira_aquatica_01_1k.gltf', [[355,465,170],[950,460,170],[1320,460,165]], 170, groups.base);
+placeModel('ph/models/potted_plant_04/potted_plant_04_1k.json', plantSpots, 120);
+placeModel('ph/models/pachira_aquatica_01/pachira_aquatica_01_1k.json', [[360,468,170]], 170, groups.base);
 groups.env.children.forEach(o=>{ const p=o.geometry&&o.geometry.parameters; if(p && p.radiusTop===5 && p.height===700) o.visible=false; });
-placeModel('ph/models/street_lamp_01/street_lamp_01_1k.gltf', [[-500,1960],[700,1960],[1900,1960]], 560, groups.env);
+placeModel('ph/models/street_lamp_01/street_lamp_01_1k.json', [[-900,1960],[1700,1960],[2700,1960]], 560, groups.env);
 
 /* ---------- Vues ---------- */
 const views={
