@@ -109,6 +109,8 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 
 const H = 280;            // hauteur sous plafond estimée (cm)
 const FLOOR = 290;        // hauteur d'un étage d'habitation (cm), estimée
@@ -517,13 +519,10 @@ function egg(x,z){
   const chain=new THREE.Mesh(new THREE.CylinderGeometry(1,1,H+20-190,6),M({color:0x999999,metalness:.8})); chain.position.y=190+(H+20-190)/2; g.add(chain);
   P.add(g); colliders.push({x0:x-48,x1:x+48,z0:z-48,z1:z+48,grp:P});
 }
+const plantSpots=[];   // remplies par le modèle Poly Haven potted_plant_04 (voir plus bas)
 function plant(x,z,s=1){
-  const pot=new THREE.Mesh(new THREE.CylinderGeometry(22*s,18*s,52*s,18),black); pot.position.set(x,26*s,z); P.add(pot);
-  colliders.push({x0:x-22,x1:x+22,z0:z-22,z1:z+22,grp:P});
-  const leafM=M({color:0x3f8f3a,roughness:.6,side:THREE.DoubleSide});
-  for(let i=0;i<9;i++){const a=i/9*Math.PI*2, l=new THREE.Mesh(new THREE.PlaneGeometry(16*s,70*s),leafM);
-    l.position.set(x+Math.cos(a)*10*s,(52+38)*s,z+Math.sin(a)*10*s); l.rotation.set(-0.5*Math.sin(a),a,0.5*Math.cos(a)); P.add(l);}
-  glow(x-8,z-8,16,16,52*s,52*s+1,0xffd36b);
+  plantSpots.push([x,z,120*s]); colliders.push({x0:x-25,x1:x+25,z0:z-25,z1:z+25,grp:P});
+  glow(x-8,z-8,16,16,1,2,0xffd36b);
 }
 // fauteuils suspendus aux deux extrémités, contre les écrans à lames
 egg(60,640); egg(60,880); egg(1300,640); egg(1300,880);
@@ -664,6 +663,51 @@ const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight), 0.5
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene,camera)); composer.addPass(bloom); composer.addPass(new OutputPass());
 
+
+// --- Matériaux réalistes Poly Haven (CC0) : textures 1k couleur / relief / rugosité
+const PH='ph/tex/';
+const phCache={};
+function phTex(id,kind){const k=id+kind; if(!phCache[k]){const t=texLoader.load(PH+id+'_'+kind+'.jpg'); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.anisotropy=8; if(kind==='diff') t.colorSpace=THREE.SRGBColorSpace; phCache[k]=t;} return phCache[k];}
+function pbrMat(id,rx,ry,opts={}){
+  const set=k=>{const t=phTex(id,k).clone(); t.needsUpdate=true; t.repeat.set(rx,ry); return t;};
+  return new THREE.MeshStandardMaterial(Object.assign({map:opts.noColor?null:set('diff'),normalMap:set('nor'),roughnessMap:set('rough'),normalScale:new THREE.Vector2(.8,.8)},opts.extra||{}));
+}
+function sizeOf(o){const b=new THREE.Box3().setFromObject(o);return b.getSize(new THREE.Vector3());}
+Object.values(groups).forEach(g=>g.children.forEach(o=>{
+  const m=o.material; if(!m||Array.isArray(m)||!m.map||!m.map.image) return;
+  const img=m.map.image, s=sizeOf(o), isPlane=o.geometry&&o.geometry.type==='PlaneGeometry';
+  const big=Math.max(s.x,s.z), tall=Math.max(s.x,s.z,s.y);
+  if(img===concrete.image && isPlane && g===groups.base)      o.material=pbrMat('smooth_concrete_floor',s.x/250,s.z/250,{extra:{color:0xb4b2ae,roughness:.35}});
+  else if(img===concrete.image)                                o.material=pbrMat('patterned_paving_02',big/160,Math.max(1,Math.min(s.y,s.z)/160));
+  else if(img===asphalt.image)                                 o.material=pbrMat('asphalt_02',s.x/320,s.z/320);
+  else if(img===deck.image)                                    o.material=pbrMat('dark_wooden_planks',s.x/200,s.z/200,{extra:{color:0x8a7f74}});
+  else if(img===facade.image)                                  o.material=pbrMat('white_plaster_02',tall/300,tall/300,{extra:{color:m.color.getHex()}});
+  else if(img===plaster.image)                                 o.material=pbrMat('white_plaster_02',tall/250,tall/250);
+}));
+// lames et structure noires : planches peintes en noir
+for(const mat of [slatM,black]){ mat.map=phTex('black_painted_planks','diff'); mat.normalMap=phTex('black_painted_planks','nor'); mat.roughnessMap=phTex('black_painted_planks','rough'); mat.color.set(0x6a6a6e); mat.needsUpdate=true; }
+// velours des banquettes, poufs et fauteuils (couleur gardée, relief du tissu)
+for(const mat of [cyanM,pinkM]){ mat.normalMap=phTex('velour_velvet','nor'); mat.roughnessMap=phTex('velour_velvet','rough'); mat.roughness=1; mat.needsUpdate=true; }
+
+// --- Ciel du soir pour les reflets (HDRI Poly Haven)
+new RGBELoader().load('ph/hdri/modern_evening_street_1k.hdr', hdr=>{
+  const pm=new THREE.PMREMGenerator(renderer); scene.environment=pm.fromEquirectangular(hdr).texture; hdr.dispose(); pm.dispose();
+  scene.traverse(o=>{ if(o.material && o.material.isMeshStandardMaterial) o.material.envMapIntensity=0.55; });
+});
+
+// --- Modèles 3D Poly Haven : plantes en pot, grande plante, lampadaires
+const gltfLoader=new GLTFLoader();
+function placeModel(url,spots,height,grp=P){
+  gltfLoader.load(url,g=>{
+    const src=g.scene; src.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; if(o.material) o.material.envMapIntensity=0.55; } });
+    const bb=new THREE.Box3().setFromObject(src), s=bb.getSize(new THREE.Vector3());
+    spots.forEach(([x,z,h])=>{ const c=src.clone(true); const kk=(h||height)/s.y; c.scale.setScalar(kk); c.position.set(x-(bb.min.x+s.x/2)*kk,-bb.min.y*kk,z-(bb.min.z+s.z/2)*kk); c.rotation.y=Math.random()*Math.PI*2; grp.add(c); });
+  });
+}
+placeModel('ph/models/potted_plant_04/potted_plant_04_1k.gltf', plantSpots, 120);
+placeModel('ph/models/pachira_aquatica_01/pachira_aquatica_01_1k.gltf', [[355,465,170],[950,460,170],[1320,460,165]], 170, groups.base);
+groups.env.children.forEach(o=>{ const p=o.geometry&&o.geometry.parameters; if(p && p.radiusTop===5 && p.height===700) o.visible=false; });
+placeModel('ph/models/street_lamp_01/street_lamp_01_1k.gltf', [[-500,1960],[700,1960],[1900,1960]], 560, groups.env);
 
 /* ---------- Vues ---------- */
 const views={
