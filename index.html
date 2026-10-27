@@ -474,7 +474,11 @@ glow(-30,ZF+10,620,3,H+30,H+34,0xff2f92); glow(820,ZF+10,590,3,H+30,H+34,0x22d3e
   const t=new THREE.CanvasTexture(cv); t.colorSpace=THREE.SRGBColorSpace;
   const sign=new THREE.Mesh(new THREE.PlaneGeometry(330,116),new THREE.MeshBasicMaterial({map:t}));
   sign.position.set(705,H+72,ZF+11.5); sign.visible=false; P.add(sign);
-  const logoF=new THREE.Mesh(new THREE.PlaneGeometry(172,105),new THREE.MeshBasicMaterial({map:imgTex('img/identite.jpg',LOGO)})); logoF.position.set(705,H+72,ZF+11.6); P.add(logoF);
+  // caisson lumineux : cadre alu noir 15 cm, face logo rétroéclairée, liseré néon, halo
+  box(612,ZF+10,186,15,H+13,H+131,M({color:0x0e0e10,metalness:.6,roughness:.35}),P,false);
+  const logoF=new THREE.Mesh(new THREE.PlaneGeometry(176,108),new THREE.MeshBasicMaterial({map:imgTex('img/identite.jpg',LOGO)})); logoF.position.set(705,H+72,ZF+25.2); P.add(logoF);
+  glow(612,ZF+25,186,1.5,H+129,H+132,0xff2f92); glow(612,ZF+25,186,1.5,H+12,H+15,0xff2f92); glow(611,ZF+25,3,1.5,H+12,H+132,0xff2f92); glow(797,ZF+25,3,1.5,H+12,H+132,0xff2f92);
+  { const halo=new THREE.PointLight(0xff4fa0,1.6,420,0); halo.position.set(705,H+60,ZF+90); scene.add(halo); }
 }
 // écrans à lames verticales sur les côtés, avec bandes LED
 slats(-28,535,-28,ZF-30,0,H+20);   slats(1392,535,1392,ZF-30,0,H+20);
@@ -509,7 +513,7 @@ function sofa(x,z,w,facing){ // facing : +1 = assise vers la façade du local (z
   box(x+4,seatZ,w-8,70,42,58,cyanM,P,false);
   box(x,back,w,10,42,100,slatM,P,false); box(x+4,facing>0?back-14:back+10,w-8,14,58,98,cyanM,P,false);
 }
-function table(x,z,w=80,d=80){ box(x,z,w,d,72,76,black,P); box(x+w/2-4,z+d/2-4,8,8,0,72,black,P,false); }
+function table(x,z,w=80,d=80){ box(x,z,w,d,72,76,new THREE.MeshStandardMaterial({map:cvTex(256,256,(c,W,Hh)=>{c.fillStyle='#f1eee8';c.fillRect(0,0,W,Hh);for(let i=0;i<500;i++){c.fillStyle=['#ff4fa0','#1f1f22','#9a9a9a','#ffd23f','#d7d2c8'][i%5];c.beginPath();c.ellipse(Math.random()*W,Math.random()*Hh,1+Math.random()*4,1+Math.random()*3,Math.random()*3,0,7);c.fill();}}),roughness:.35}),P); box(x+w/2-4,z+d/2-4,8,8,0,72,black,P,false); }
 function pouf(x,z){ const p=new THREE.Mesh(new THREE.CylinderGeometry(24,24,42,24),pinkM); p.position.set(x,21,z); p.castShadow=true; P.add(p); colliders.push({x0:x-24,x1:x+24,z0:z-24,z1:z+24,grp:P}); }
 function egg(x,z){
   const g=new THREE.Group(); g.position.set(x,0,z);
@@ -569,7 +573,8 @@ const mural=cvTex(2700,560,(c,w,h)=>{
   neonText(c,'SUCRÉ',sx*0.42,118,84,'#ff4fa0'); neonText(c,'SALÉ',sx+(w-sx)*0.42,118,84,'#22d3ee');
   panda(c,sx-150,105,48);
 });
-{ const m=new THREE.Mesh(new THREE.PlaneGeometry(1350,H),new THREE.MeshStandardMaterial({map:mural,roughness:.7,emissive:0xffffff,emissiveMap:mural,emissiveIntensity:.18})); m.position.set(675,H/2,0.6); IB.add(m); }
+{ const m=new THREE.Mesh(new THREE.PlaneGeometry(1350,H),M({color:0x26262b,roughness:.9})); m.position.set(675,H/2,0.6); IB.add(m);
+  const cr=new THREE.Mesh(new THREE.PlaneGeometry(1350,60),M({color:0xc9cdd1,metalness:.85,roughness:.3})); cr.position.set(675,122,0.9); IB.add(cr); }   // mur du fond uni + crédence inox
 
 // écrans de menu au-dessus de chaque partie
 function menuScreen(x,col,title,i){
@@ -580,10 +585,15 @@ function menuScreen(x,col,title,i){
     c.fillStyle='rgba(255,255,255,.6)'; c.fillRect(14,168,180,8);});
   const m=new THREE.Mesh(new THREE.PlaneGeometry(105,62),new THREE.MeshBasicMaterial({map:t})); m.position.set(x,182,2); IB.add(m);
 }
-['img/carte-burger-scoop.jpg','img/carte-gaufre.jpg','img/carte-crepe.jpg'].forEach((u,i)=>{ const x=140+i*190;
-  box(x-90,0.8,180,3,128,232,M({color:0x0d0d10}),IB,false);
-  const m=new THREE.Mesh(new THREE.PlaneGeometry(172,97),new THREE.MeshBasicMaterial({map:imgTex(u),color:0xe8e8e8})); m.position.set(x,180,4); IB.add(m); });
-['BURGERS','TACOS','PANINIS','FRITES','SNACKS'].forEach((t,i)=>menuScreen(SPLIT+60+i*112,'#22d3ee',t,i));
+// les 3 cartes sur des télés suspendues au plafond, au-dessus du comptoir sucré, inclinées vers les clients
+['img/carte-burger-scoop.jpg','img/carte-gaufre.jpg','img/carte-crepe.jpg'].forEach((u,i)=>{
+  const tv=new THREE.Group(); tv.position.set(120+i*185,212,200); tv.rotation.x=-0.14; tv.scale.setScalar(0.72);
+  const frame=new THREE.Mesh(new THREE.BoxGeometry(180,104,6),M({color:0x0c0c0e,roughness:.3,metalness:.4})); tv.add(frame);
+  const scr=new THREE.Mesh(new THREE.PlaneGeometry(172,97),new THREE.MeshBasicMaterial({map:imgTex(u),color:0xe8e8e8})); scr.position.z=3.2; tv.add(scr);
+  IB.add(tv);
+  [-43,43].forEach(dx=>{ const rod=new THREE.Mesh(new THREE.CylinderGeometry(1.2,1.2,H-249,8),M({color:0x111111,metalness:.6})); rod.position.set(120+i*185+dx,249+(H-249)/2,198); IB.add(rod); });
+});
+
 
 // hotte inox et ligne de cuisine côté salé, le long du mur du fond
 const inoxP=M({color:0xc9cdd1,metalness:.8,roughness:.3});
@@ -601,13 +611,13 @@ const frontL=cvTex(1260,210,(c,w,h)=>{c.fillStyle='#22c1d6'; c.fillRect(0,0,w,h)
 box(0,ZC,SPLIT,DC,0,HC,M({color:0xff6fb1,roughness:.6}),IB);
 box(SPLIT,ZC,1200-SPLIT,DC,0,HC,M({color:0x22c1d6,roughness:.6}),IB);
 { const a=new THREE.Mesh(new THREE.PlaneGeometry(SPLIT,HC-8),new THREE.MeshStandardMaterial({map:frontS,emissive:0xffffff,emissiveMap:frontS,emissiveIntensity:.25})); a.position.set(SPLIT/2,(HC-8)/2+8,ZC+DC+0.6); IB.add(a);
-  const b=new THREE.Mesh(new THREE.PlaneGeometry(1200-SPLIT,HC-8),new THREE.MeshStandardMaterial({map:frontL,emissive:0xffffff,emissiveMap:frontL,emissiveIntensity:.25})); b.position.set((SPLIT+1200)/2,(HC-8)/2+8,ZC+DC+0.6); IB.add(b); }
-box(0,ZC-5,1205,DC+10,HC,HC+5,M({color:0x2b2b30,metalness:.6,roughness:.3}),IB,false);
+ }
+
 glow(0,ZC+DC+1,SPLIT,2,2,6,0xff2f92,IB); glow(SPLIT,ZC+DC+1,1200-SPLIT,2,2,6,0x22d3ee,IB);
 // vitrines réfrigérées, caisses
 const vitM=new THREE.MeshPhysicalMaterial({color:0xdff3ff,transparent:true,opacity:.28,roughness:.05});
-[[60,220],[320,200],[700,200],[940,180]].forEach(([x,w])=>{ box(x,ZC+5,w,48,HC+5,HC+40,vitM,IB,false); glow(x,ZC+8,w,40,HC+6,HC+8,0xfff1d6,IB);
-  for(let k=0;k<Math.floor(w/40);k++) box(x+10+k*40,ZC+15,26,26,HC+8,HC+16,M({color:[0xf7c6dc,0xffd98a,0xe5893a,0x9ed36a][(k+x)%4]}),IB,false); });
+[[60,220],[320,200],[700,200],[940,180]].forEach(([x,w],vi)=>{ box(x,ZC+5,w,48,HC+5,HC+40,vitM,IB,false); glow(x,ZC+8,w,40,HC+6,HC+8,0xfff1d6,IB); if(vi===0) return;
+  fillVitrine(x,w); });
 [[560,ZC+20],[1150,ZC+20]].forEach(([x,z])=>{ box(x,z,40,6,HC+5,HC+38,M({color:0x111111}),IB,false); });
 // frigo boissons (salé)
 box(1280,250,65,75,0,195,M({color:0x1c1c20}),IB); glow(1277,255,2,65,12,188,0x9fe8ff,IB);
@@ -615,20 +625,17 @@ box(1280,250,65,75,0,195,M({color:0x1c1c20}),IB); glow(1277,255,2,65,12,188,0x9f
 { const t=cvTex(700,240,(c,w,h)=>{c.fillStyle='#0d0d10'; c.fillRect(0,0,w,h); c.lineJoin='round'; c.textAlign='center'; c.font='900 120px Arial Black, Arial';
     c.lineWidth=22; c.strokeStyle='#ff2f92'; c.strokeText('BON',190,135); c.strokeStyle='#22d3ee'; c.strokeText('BON',510,135); c.fillStyle='#fff'; c.fillText('BON',190,135); c.fillText('BON',510,135);
     c.fillStyle='#ff2f92'; c.font='900 90px Arial Black, Arial'; c.fillText('&',350,130); c.font='800 42px Arial'; c.fillStyle='#ffe14d'; c.fillText('SWEET AND SALT',350,210);});
-  const m=new THREE.Mesh(new THREE.PlaneGeometry(118,72),new THREE.MeshBasicMaterial({map:imgTex('img/identite.jpg',LOGO)})); m.position.set(SPLIT,240,ZC+DC+15); IB.add(m);
-  box(SPLIT-62,ZC+DC+12,124,3,202,278,M({color:0x0d0d10}),IB,false); }
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(118,72),new THREE.MeshBasicMaterial({map:imgTex('img/identite.jpg',LOGO)})); m.position.set(SPLIT,240,ZC+DC+15.6); IB.add(m);
+  box(SPLIT-63,ZC+DC+5,126,10,201,279,M({color:0x0e0e10,metalness:.6,roughness:.35}),IB,false);
+  glow(SPLIT-63,ZC+DC+15,126,1,277,279,0xff2f92,IB); glow(SPLIT-63,ZC+DC+15,126,1,201,203,0xff2f92,IB);
+  [-50,50].forEach(dx=>{ const r=new THREE.Mesh(new THREE.CylinderGeometry(1,1,H-279,6),M({color:0x111111})); r.position.set(SPLIT+dx,279+(H-279)/2,ZC+DC+10); IB.add(r); }); }
 
 // plafond noir, anneaux et lignes néon, spots, plantes suspendues
 { const c=new THREE.Mesh(new THREE.PlaneGeometry(1350,500),M({color:0x111114,side:THREE.DoubleSide})); c.rotation.x=Math.PI/2; c.position.set(675,H-1,250); IB.add(c); }
 [[300,340],[1000,340]].forEach(([x,z])=>{const r=new THREE.Mesh(new THREE.TorusGeometry(55,2,8,48),new THREE.MeshBasicMaterial({color:0xff3d9a})); r.rotation.x=Math.PI/2; r.position.set(x,H-6,z); IB.add(r);});
 glow(0,ZC+DC+30,SPLIT,3,H-5,H-3,0xff2f92,IB); glow(SPLIT,ZC+DC+30,690,3,H-5,H-3,0x22d3ee,IB);
 for(let x=80;x<1300;x+=130){ const s=new THREE.Mesh(new THREE.CylinderGeometry(4,5,14,10),M({color:0x111111})); s.position.set(x,H-9,ZC+DC+60); IB.add(s); glow(x-3,ZC+DC+57,6,6,H-17,H-16,0xffe7b0,IB); }
-const vine=M({color:0x3f8f3a,roughness:.6,side:THREE.DoubleSide});
-[[150,320],[480,300],[820,300],[1180,320],[230,450],[1100,450]].forEach(([x,z])=>{
-  const pot=new THREE.Mesh(new THREE.CylinderGeometry(14,11,16,12),M({color:0x111111})); pot.position.set(x,H-38,z); IB.add(pot);
-  for(let k=0;k<7;k++){const l=new THREE.Mesh(new THREE.PlaneGeometry(10,40+Math.random()*30),vine); const a=k/7*Math.PI*2; l.position.set(x+Math.cos(a)*10,H-70,z+Math.sin(a)*10); l.rotation.y=a; IB.add(l);}
-  const w=new THREE.Mesh(new THREE.CylinderGeometry(.6,.6,30,4),M({color:0x222222})); w.position.set(x,H-15,z); IB.add(w);
-});
+
 
 // salle : tables, chaises roses, banquettes bleues côté façade
 function chair(x,z,rot=0){const g=new THREE.Group(); g.position.set(x,0,z); g.rotation.y=rot;
@@ -636,13 +643,14 @@ function chair(x,z,rot=0){const g=new THREE.Group(); g.position.set(x,0,z); g.ro
   const back=new THREE.Mesh(new THREE.CylinderGeometry(22,22,30,20,1,true,Math.PI*0.25,Math.PI*1.5),M({color:0xff3d8b,side:THREE.DoubleSide})); back.position.y=80; g.add(back);
   [[-14,-14],[14,-14],[-14,14],[14,14]].forEach(([a,b])=>{const l=new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.5,52,6),M({color:0x111111})); l.position.set(a,26,b); g.add(l);});
   IB.add(g); colliders.push({x0:x-22,x1:x+22,z0:z-22,z1:z+22,grp:IB});}
-function rtable(x,z){const t=new THREE.Mesh(new THREE.CylinderGeometry(35,35,4,24),M({color:0x141416})); t.position.set(x,74,z); IB.add(t);
+const terrazzo=cvTex(256,256,(c,w,h)=>{c.fillStyle="#f1eee8";c.fillRect(0,0,w,h);for(let i=0;i<500;i++){c.fillStyle=["#ff4fa0","#1f1f22","#9a9a9a","#ffd23f","#d7d2c8"][i%5];c.beginPath();c.ellipse(Math.random()*w,Math.random()*h,1+Math.random()*4,1+Math.random()*3,Math.random()*3,0,7);c.fill();}});
+function rtable(x,z){const t=new THREE.Mesh(new THREE.CylinderGeometry(35,35,4,24),new THREE.MeshStandardMaterial({map:terrazzo,roughness:.35})); t.position.set(x,74,z); IB.add(t);
   const l=new THREE.Mesh(new THREE.CylinderGeometry(3,3,72,8),M({color:0x141416})); l.position.set(x,36,z); IB.add(l); colliders.push({x0:x-35,x1:x+35,z0:z-35,z1:z+35,grp:IB});
   glow(x-3,z-3,6,6,76,84,0xffc46b,IB);}
 // file d'attente libre de 1,35 m devant le comptoir (z 230-365)
 // banquette bleue contre le mur plein de façade (x 400-720), 2 petites tables
-box(400,445,320,55,0,42,slatM,IB); box(404,445,312,50,42,56,cyanM,IB,false); box(400,488,320,12,42,105,cyanM,IB,false);
-[480,640].forEach(x=>rtable(x,400));
+box(400,445,190,55,0,42,slatM,IB); box(404,445,182,50,42,56,cyanM,IB,false); box(400,488,190,12,42,105,cyanM,IB,false);
+[450,545].forEach(x=>rtable(x,400));
 // coin glacier : 2 tables le long du mur est (sous la fresque), passage libre de 2,30 m vers l'ouverture
 [[60,300],[60,430]].forEach(([x,z])=>{ rtable(x,z); chair(x+62,z,-Math.PI/2); });
 // sortie de secours signalée au-dessus de la porte arrière (mur ouest)
@@ -714,6 +722,53 @@ const sneeze=new THREE.MeshPhysicalMaterial({color:0xe8f6ff,transparent:true,opa
 // frigo boissons rempli
 for(let r=0;r<5;r++) for(let c=0;c<5;c++) cyl(1290+ (c%5)*10,22+r*35,258+(c*12)%60,3.2,20,M({color:[0x22c1d6,0xff3d8b,0xffd23f,0x7ad36a,0xff8a3d][(r+c)%5],roughness:.3}),10);
 
+
+// --- Comptoir réaliste : lames cyan en relief (salé), plan en quartz noir, produits modélisés dans les vitrines
+function fillVitrine(x,w){
+  const sweet = x < SPLIT, y0 = HC+7, z0 = ZC+14;
+  const glazes=[0xff6fb1,0x5a2e1a,0xfff3d6,0xffd23f], dough=M({color:0xd9a35b,roughness:.7});
+  for(let k=0;k<Math.floor((w-20)/30);k++){
+    const cx=x+18+k*30;
+    for(let row=0;row<2;row++){ const cz=z0+6+row*20;
+      if(sweet){
+        const kind=(k+row+(x>200?1:0))%3;
+        if(kind===0){ const d=new THREE.Mesh(new THREE.TorusGeometry(6,3,10,18),dough); d.rotation.x=Math.PI/2; d.position.set(cx,y0+3,cz); IB.add(d);
+          const g=new THREE.Mesh(new THREE.TorusGeometry(6,3.1,10,18,Math.PI*2),M({color:glazes[k%4],roughness:.3})); g.rotation.x=Math.PI/2; g.scale.set(1,1,.5); g.position.set(cx,y0+4.2,cz); IB.add(g); }
+        else if(kind===1){ cyl(cx,y0,cz,9,3,dough); cyl(cx,y0+3,cz,8,1.6,M({color:[0xd94b3a,0x5a2e1a,0xffd98a][k%3],roughness:.35})); }
+        else { const c=new THREE.Mesh(new THREE.TorusGeometry(7,3.2,10,16,Math.PI*1.3),M({color:0xc98a3e,roughness:.6})); c.rotation.set(Math.PI/2,0,Math.PI*0.35); c.position.set(cx,y0+3,cz); IB.add(c); }
+      } else {
+        if((k+row)%2===0){ const bun=new THREE.Mesh(new THREE.SphereGeometry(8,16,10,0,Math.PI*2,0,Math.PI/2),M({color:0xc98a3e,roughness:.55})); bun.scale.y=.65; bun.position.set(cx,y0+5,cz); IB.add(bun);
+          cyl(cx,y0+3,cz,8.5,2,M({color:0x5a3220,roughness:.7})); cyl(cx,y0,cz,8,3,dough); }
+        else { const wrap=new THREE.Mesh(new THREE.CylinderGeometry(4,4,18,14),M({color:0xe8d3a6,roughness:.8})); wrap.rotation.z=Math.PI/2; wrap.position.set(cx,y0+4,cz); IB.add(wrap); }
+      }
+    }
+  }
+}
+// plan de travail en quartz noir moucheté
+{ const q=cvTex(512,128,(c,w,h)=>{ c.fillStyle='#17171a'; c.fillRect(0,0,w,h); for(let i=0;i<2600;i++){ const g=60+Math.random()*120|0; c.fillStyle=`rgba(${g},${g},${g+8},${Math.random()*.5})`; c.fillRect(Math.random()*w,Math.random()*h,1.2,1.2);} });
+  q.wrapS=q.wrapT=THREE.RepeatWrapping; q.repeat.set(6,1);
+  const top=new THREE.Mesh(new THREE.BoxGeometry(1205,5,DC+10),new THREE.MeshStandardMaterial({map:q,roughness:.22,metalness:.1})); top.position.set(602.5,HC+2.5,ZC+DC/2); IB.add(top); }
+// façade salé : vraies lames verticales cyan laquées
+{ const lac=M({color:0x1fb8cf,roughness:.35});
+  for(let x=SPLIT+3;x<1198;x+=7){ const s=new THREE.Mesh(new THREE.CylinderGeometry(3,3,HC-12,10,1,false,0,Math.PI),lac); s.rotation.y=-Math.PI/2; s.position.set(x,(HC-12)/2+8,ZC+DC+0.6); IB.add(s); }
+  const t=cvTex(1080,210,(c,w,h)=>{ c.clearRect(0,0,w,h); neonText(c,'SALÉ',w*0.3,140,82,'#22d3ee'); panda(c,w*0.8,110,40); });
+  const p=new THREE.Mesh(new THREE.PlaneGeometry(1200-SPLIT,HC-8),new THREE.MeshBasicMaterial({map:t,transparent:true})); p.position.set((SPLIT+1200)/2,(HC-8)/2+8,ZC+DC+4); IB.add(p); }
+
+// --- Inspirations : bornes de commande à l'entrée, néon « Salément sucré » au fond côté salé
+function kiosk(x,col){ box(x-24,478,48,16,0,6,M({color:0x111214}),IB);
+  box(x-6,482,12,8,6,80,M({color:0x111214,metalness:.5}),IB,false);
+  const g=new THREE.Group(); g.position.set(x,135,486); g.rotation.x=0.08;
+  g.add(new THREE.Mesh(new THREE.BoxGeometry(50,110,8),M({color:0x0c0c0e,metalness:.4,roughness:.3})));
+  const t=cvTex(200,400,(c,w,h)=>{ c.fillStyle=col; c.fillRect(0,0,w,h); c.fillStyle='#fff'; c.font='900 34px Arial Black, Arial'; c.textAlign='center';
+    c.fillText('BON&BON',w/2,80); c.font='700 20px Arial'; c.fillText('COMMANDE ICI',w/2,120); panda(c,w/2,240,55); c.fillStyle='rgba(255,255,255,.85)'; c.fillRect(30,330,140,34); c.fillStyle=col; c.font='800 18px Arial'; c.fillText('TOUCHER',w/2,353); });
+  const s=new THREE.Mesh(new THREE.PlaneGeometry(42,84),new THREE.MeshBasicMaterial({map:t})); s.position.set(0,6,-4.2); s.rotation.y=Math.PI; g.add(s);
+  box(-14,-50,28,4,0,0,M({color:0x222222}),g); IB.add(g);
+  box(x-10,480,20,6,98,112,M({color:0x1a1a1e}),IB,false); }
+kiosk(625,'#ff2f92'); kiosk(690,'#1f6fd1');
+{ const t=cvTex(1200,200,(c,w,h)=>{ c.clearRect(0,0,w,h); c.font='900 120px Arial Black, Arial'; c.textAlign='center'; c.shadowBlur=40;
+    c.shadowColor='#ffffff'; c.fillStyle='#ffffff'; c.fillText('SALÉMENT',w*0.33,140); c.shadowColor='#ff2f92'; c.fillStyle='#ffd1e6'; c.fillText('SUCRÉ',w*0.78,140); });
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(205,34),new THREE.MeshBasicMaterial({map:t,transparent:true,depthWrite:false})); m.position.set(1137,205,1.5); IB.add(m); }
+
 // bannière de la marque en fresque sur le mur intérieur côté glacier
 { const m=new THREE.Mesh(new THREE.PlaneGeometry(470,187),new THREE.MeshStandardMaterial({map:imgTex('img/banniere.jpg'),roughness:.8,emissive:0xffffff,emissiveMap:imgTex('img/banniere.jpg'),emissiveIntensity:.25}));
   m.position.set(1.2,165,250); m.rotation.y=Math.PI/2; IB.add(m); }
@@ -776,7 +831,7 @@ function placeModel(url,spots,height,grp=P){
   gltfLoader.load(url,g=>{
     const src=g.scene; src.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; if(o.material) o.material.envMapIntensity=0.55; } });
     const bb=new THREE.Box3().setFromObject(src), s=bb.getSize(new THREE.Vector3());
-    spots.forEach(([x,z,h])=>{ const c=src.clone(true); const kk=(h||height)/s.y; c.scale.setScalar(kk); c.position.set(x-(bb.min.x+s.x/2)*kk,-bb.min.y*kk,z-(bb.min.z+s.z/2)*kk); c.rotation.y=Math.random()*Math.PI*2; grp.add(c); });
+    spots.forEach(([x,z,h])=>{ const c=src.clone(true); const kk=(h||height)/s.y; c.scale.setScalar(kk); c.position.set(x-(bb.min.x+s.x/2)*kk,-bb.min.y*kk,z-(bb.min.z+s.z/2)*kk); c.rotation.y=0; grp.add(c); });
   });
 }
 placeModel('ph/models/potted_plant_04/potted_plant_04_1k.json', plantSpots, 120);
