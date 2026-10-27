@@ -434,6 +434,11 @@ Object.values(groups).forEach(g=>g.children.forEach(o=>{
 colliders.forEach(c=>{ if(c.fixed) return; if(c.z0>=700){c.z0+=DZ;c.z1+=DZ;} else if(c.z1>700 && c.z1<=910 && c.z0>=-1000){c.z1+=DZ;} });
 
 
+// images de la marque (fournies par le client)
+const texLoader=new THREE.TextureLoader();
+function imgTex(url,crop){const t=texLoader.load(url); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=8;
+  if(crop){const [x0,y0,x1,y1,W,Hh]=crop; t.repeat.set((x1-x0)/W,(y1-y0)/Hh); t.offset.set(x0/W,1-y1/Hh);} return t;}
+const LOGO=[1055,45,1440,280,1536,1024];   // logo néon sur fond noir, dans la planche d'identité
 /* ================= Projet Bon&Bon : aménagement (coordonnées finales, partie couverte jusqu'à z 1086) ================= */
 const ZF = 1086;
 const black = M({color:0x121315, roughness:.55});
@@ -466,7 +471,8 @@ glow(-30,ZF+10,620,3,H+30,H+34,0xff2f92); glow(820,ZF+10,590,3,H+30,H+34,0x22d3e
   c.fillStyle='#ff2f92'; c.fillText('SWEET AND',440,300); c.fillStyle='#ffe14d'; c.fillText('SALT',735,300);
   const t=new THREE.CanvasTexture(cv); t.colorSpace=THREE.SRGBColorSpace;
   const sign=new THREE.Mesh(new THREE.PlaneGeometry(330,116),new THREE.MeshBasicMaterial({map:t}));
-  sign.position.set(705,H+72,ZF+11.5); P.add(sign);
+  sign.position.set(705,H+72,ZF+11.5); sign.visible=false; P.add(sign);
+  const logoF=new THREE.Mesh(new THREE.PlaneGeometry(172,105),new THREE.MeshBasicMaterial({map:imgTex('img/identite.jpg',LOGO)})); logoF.position.set(705,H+72,ZF+11.6); P.add(logoF);
 }
 // écrans à lames verticales sur les côtés, avec bandes LED
 slats(-28,535,-28,ZF-30,0,H+20);   slats(1392,535,1392,ZF-30,0,H+20);
@@ -573,7 +579,9 @@ function menuScreen(x,col,title,i){
     c.fillStyle='rgba(255,255,255,.6)'; c.fillRect(14,168,180,8);});
   const m=new THREE.Mesh(new THREE.PlaneGeometry(105,62),new THREE.MeshBasicMaterial({map:t})); m.position.set(x,182,2); IB.add(m);
 }
-['GLACES','CRÊPES','GAUFRES','GRANITAS','CHURROS'].forEach((t,i)=>menuScreen(90+i*112,'#ff4fa0',t,i));
+['img/carte-burger-scoop.jpg','img/carte-gaufre.jpg','img/carte-crepe.jpg'].forEach((u,i)=>{ const x=140+i*190;
+  box(x-90,0.8,180,3,128,232,M({color:0x0d0d10}),IB,false);
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(172,97),new THREE.MeshBasicMaterial({map:imgTex(u),color:0xe8e8e8})); m.position.set(x,180,4); IB.add(m); });
 ['BURGERS','TACOS','PANINIS','FRITES','SNACKS'].forEach((t,i)=>menuScreen(SPLIT+60+i*112,'#22d3ee',t,i));
 
 // hotte inox et ligne de cuisine côté salé, le long du mur du fond
@@ -606,8 +614,8 @@ box(1295,ZC-10,50,70,0,195,M({color:0x1c1c20}),IB); glow(1297,ZC+59,46,2,12,188,
 { const t=cvTex(700,240,(c,w,h)=>{c.fillStyle='#0d0d10'; c.fillRect(0,0,w,h); c.lineJoin='round'; c.textAlign='center'; c.font='900 120px Arial Black, Arial';
     c.lineWidth=22; c.strokeStyle='#ff2f92'; c.strokeText('BON',190,135); c.strokeStyle='#22d3ee'; c.strokeText('BON',510,135); c.fillStyle='#fff'; c.fillText('BON',190,135); c.fillText('BON',510,135);
     c.fillStyle='#ff2f92'; c.font='900 90px Arial Black, Arial'; c.fillText('&',350,130); c.font='800 42px Arial'; c.fillStyle='#ffe14d'; c.fillText('SWEET AND SALT',350,210);});
-  const m=new THREE.Mesh(new THREE.PlaneGeometry(170,58),new THREE.MeshBasicMaterial({map:t})); m.position.set(SPLIT,240,ZC+DC+15); IB.add(m);
-  box(SPLIT-86,ZC+DC+12,172,3,211,269,M({color:0x0d0d10}),IB,false); }
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(118,72),new THREE.MeshBasicMaterial({map:imgTex('img/identite.jpg',LOGO)})); m.position.set(SPLIT,240,ZC+DC+15); IB.add(m);
+  box(SPLIT-62,ZC+DC+12,124,3,202,278,M({color:0x0d0d10}),IB,false); }
 
 // plafond noir, anneaux et lignes néon, spots, plantes suspendues
 { const c=new THREE.Mesh(new THREE.PlaneGeometry(1350,500),M({color:0x111114,side:THREE.DoubleSide})); c.rotation.x=Math.PI/2; c.position.set(675,H-1,250); IB.add(c); }
@@ -635,6 +643,9 @@ box(400,440,320,55,0,42,slatM,IB); box(404,440,312,50,42,56,cyanM,IB,false); box
 [480,640].forEach(x=>{ rtable(x,385); chair(x,325,Math.PI); });
 // coin glacier (x 0-390) : tables hautes et chaises roses
 [[110,330],[280,330],[110,440],[280,440]].forEach(([x,z])=>{ rtable(x,z); chair(x-45,z,Math.PI/2); chair(x+45,z,-Math.PI/2); });
+// bannière de la marque en fresque sur le mur intérieur côté glacier
+{ const m=new THREE.Mesh(new THREE.PlaneGeometry(470,187),new THREE.MeshStandardMaterial({map:imgTex('img/banniere.jpg'),roughness:.8,emissive:0xffffff,emissiveMap:imgTex('img/banniere.jpg'),emissiveIntensity:.25}));
+  m.position.set(1.2,165,250); m.rotation.y=Math.PI/2; IB.add(m); }
 // éclairage d'ambiance intérieur
 [[330,200,330,0xff2f92],[1000,200,330,0x22d3ee],[660,230,250,0xffe2ef]].forEach(([x,y,z,c])=>{const l=new THREE.PointLight(c,1.2,560,0); l.position.set(x,y,z); scene.add(l);});
 
