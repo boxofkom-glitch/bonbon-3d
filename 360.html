@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bon&amp;Bon : visite 360°</title>
+<meta name="description" content="Visite 360° photoréaliste du projet Bon&Bon Sweet and Salt, 7 rue Vincent Brignole, Agde.">
+<meta property="og:title" content="Bon&Bon Sweet and Salt : visite 360°">
+<meta property="og:description" content="Rendus photoréalistes du projet : façade, terrasse, comptoir, salle et cuisine.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600&family=Barlow:wght@400;500&display=swap">
+<style>
+  /* Layout : panorama plein écran, barre de points de vue en bas, galerie HD en surimpression */
+  :root{ --bg:#0d0d10; --panel:#16161bee; --ink:#f3f1f4; --muted:#a9a3ad; --pink:#ff2f92; --line:#2c2b33;
+    --f-display:"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif; --f-body:"Barlow",system-ui,Arial,sans-serif; }
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:14px/1.4 var(--f-body);overflow:hidden}
+  [hidden]{display:none!important}
+  #c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+  header{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:max(14px,env(safe-area-inset-left,0px));right:max(14px,env(safe-area-inset-right,0px));display:flex;justify-content:space-between;align-items:center;gap:10px;pointer-events:none}
+  header > *{pointer-events:auto}
+  h1{margin:0;font:600 18px/1.1 var(--f-display);letter-spacing:.02em;background:var(--panel);padding:8px 12px;border-radius:8px;border:1px solid var(--line)}
+  h1 span{color:var(--pink)}
+  a.btn,button{font:500 13px/1 var(--f-body);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:9px 11px;cursor:pointer;text-decoration:none}
+  button.on{background:var(--pink);border-color:var(--pink);color:#fff}
+  button:focus-visible,a.btn:focus-visible{outline:2px solid var(--pink);outline-offset:2px}
+  nav{position:fixed;left:0;right:0;bottom:calc(12px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;flex-wrap:wrap;gap:6px;padding:0 max(14px,env(safe-area-inset-left,0px))}
+  .hint{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--panel);padding:8px 12px;border-radius:8px;border:1px solid var(--line);pointer-events:none;transition:opacity .6s}
+  #gal{position:fixed;inset:0;background:#0d0d10f2;overflow:auto;padding:70px max(14px,env(safe-area-inset-left,0px)) 30px}
+  #gal .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;max-width:1400px;margin:0 auto}
+  #gal figure{margin:0} #gal img{width:100%;border-radius:8px;display:block;cursor:zoom-in}
+  #gal figcaption{color:var(--muted);font-size:13px;padding:6px 2px}
+  #zoom{position:fixed;inset:0;background:#000;display:flex;align-items:center;justify-content:center;cursor:zoom-out}
+  #zoom img{max-width:100%;max-height:100%}
+</style>
+</head>
+<body>
+<canvas id="c" aria-label="Panorama 360°"></canvas>
+<header>
+  <h1>Bon<span>&amp;</span>Bon · visite 360°</h1>
+  <div style="display:flex;gap:6px"><button id="galBtn">Galerie HD</button><a class="btn" href="./">Visite 3D libre</a></div>
+</header>
+<div class="hint" id="hint">Glisser pour regarder autour</div>
+<nav id="nav"></nav>
+<div id="gal" hidden><div class="grid" id="grid"></div></div>
+<div id="zoom" hidden><img alt=""></div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
+const PANOS=[['rue','Depuis la rue'],['terrasse','Terrasse couverte'],['comptoir','Comptoir'],['salle','Salle'],['cuisine','Cuisine']];
+const STILLS=[['rue','Façade depuis la rue'],['angle','Angle pizzeria'],['terrasse','Terrasse couverte'],['comptoir','Comptoir sucré / salé'],['salle','Salle et bornes de commande'],['cuisine','Cuisine']];
+const canvas=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.outputColorSpace=THREE.SRGBColorSpace;
+const scene=new THREE.Scene(), camera=new THREE.PerspectiveCamera(75,1,0.1,100);
+const sphere=new THREE.Mesh(new THREE.SphereGeometry(10,64,40),new THREE.MeshBasicMaterial({side:THREE.BackSide})); sphere.scale.x=-1; scene.add(sphere);
+const loader=new THREE.TextureLoader(); const LON0=180; let lon=LON0, lat=0, fov=75;   // LON0 : centre du panorama
+function show(id){ loader.load('rendus/pano_'+id+'.jpg',t=>{ t.colorSpace=THREE.SRGBColorSpace; sphere.material.map=t; sphere.material.needsUpdate=true; });
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle("on",b.dataset.id===id)); lon=LON0; lat=0; }
+const nav=document.getElementById('nav');
+PANOS.forEach(([id,l])=>{ const b=document.createElement('button'); b.textContent=l; b.dataset.id=id; b.onclick=()=>show(id); nav.appendChild(b); });
+const grid=document.getElementById('grid');
+STILLS.forEach(([id,l])=>{ const f=document.createElement('figure'); f.innerHTML=`<img src="rendus/hd_${id}.jpg" alt="${l}" loading="lazy"><figcaption>${l}</figcaption>`; f.querySelector('img').onclick=()=>{ const z=document.getElementById('zoom'); z.querySelector('img').src='rendus/hd_'+id+'.jpg'; z.hidden=false; }; grid.appendChild(f); });
+document.getElementById('zoom').onclick=e=>e.currentTarget.hidden=true;
+const gal=document.getElementById('gal'), galBtn=document.getElementById('galBtn');
+galBtn.onclick=()=>{ gal.hidden=!gal.hidden; galBtn.textContent=gal.hidden?'Galerie HD':'Retour au 360°'; };
+let drag=null;
+canvas.addEventListener('pointerdown',e=>{ drag={x:e.clientX,y:e.clientY,lon,lat}; canvas.setPointerCapture(e.pointerId); document.getElementById('hint').style.opacity=0; });
+canvas.addEventListener('pointermove',e=>{ if(!drag) return; const k=fov/innerHeight; lon=drag.lon-(e.clientX-drag.x)*k; lat=Math.max(-85,Math.min(85,drag.lat+(e.clientY-drag.y)*k)); });
+canvas.addEventListener('pointerup',()=>drag=null);
+canvas.addEventListener('wheel',e=>{ fov=Math.max(35,Math.min(95,fov+e.deltaY*0.04)); camera.fov=fov; camera.updateProjectionMatrix(); },{passive:true});
+function resize(){ renderer.setSize(innerWidth,innerHeight,false); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); }
+addEventListener('resize',resize); resize(); show('rue');
+renderer.setAnimationLoop(()=>{ const phi=THREE.MathUtils.degToRad(90-lat), th=THREE.MathUtils.degToRad(lon);
+  camera.lookAt(Math.sin(phi)*Math.cos(th),Math.cos(phi),Math.sin(phi)*Math.sin(th)); renderer.render(scene,camera); });
+</script>
+</body>
+</html>
